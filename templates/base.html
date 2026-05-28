@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>{% block title %}KUKUNET - Poultry Platform{% endblock %}</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Custom theme -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2E7D32',
+                        secondary: '#FF8F00',
+                        accent: '#FFB74D',
+                        success: '#4CAF50',
+                        warning: '#FFC107',
+                        danger: '#F44336',
+                        background: '#F5F5F5',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <style>
+        .mobile-container {
+            max-width: 430px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            max-width: 430px;
+            width: 100%;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            padding: 10px 0;
+        }
+        
+        .bottom-nav a {
+            flex: 1;
+            text-align: center;
+            color: #9ca3af;
+            transition: color 0.2s;
+        }
+        
+        .bottom-nav a.active {
+            color: #2E7D32;
+        }
+        
+        .bottom-nav i {
+            font-size: 1.5rem;
+        }
+        
+        .bottom-nav span {
+            font-size: 0.7rem;
+            display: block;
+        }
+        
+        .btn-primary {
+            background-color: #2E7D32;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            width: 100%;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-bottom: 16px;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-background">
+    <div class="mobile-container">
+        <!-- Main Content -->
+        <main class="pb-24">
+            {% block content %}{% endblock %}
+        </main>
+        
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav flex">
+            <a href="/" class="{% if active_nav == 'home' %}active{% endif %}">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+            <a href="/farm/" class="{% if active_nav == 'farm' %}active{% endif %}">
+                <i class="fas fa-tractor"></i>
+                <span>Farm</span>
+            </a>
+            <a href="/marketplace/" class="{% if active_nav == 'shop' %}active{% endif %}">
+                <i class="fas fa-store"></i>
+                <span>Shop</span>
+            </a>
+            <a href="/courses/" class="{% if active_nav == 'learn' %}active{% endif %}">
+                <i class="fas fa-graduation-cap"></i>
+                <span>Learn</span>
+            </a>
+            <a href="/profile/" class="{% if active_nav == 'profile' %}active{% endif %}">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+            </a>
+        </nav>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

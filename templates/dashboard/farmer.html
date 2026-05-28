@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% block title %}Farm Dashboard - KUKUNET{% endblock %}
+
+{% block content %}
+<div class="p-4">
+    <!-- Welcome Section -->
+    <div class="bg-gradient-to-r from-primary to-green-600 text-white rounded-2xl p-5 mb-6">
+        <h1 class="text-2xl font-bold">Welcome back, {{ user.full_name }}! 👋</h1>
+        <p class="opacity-90 mt-1">Your farm is doing great today</p>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="card text-center">
+            <i class="fas fa-chicken text-3xl text-primary"></i>
+            <p class="text-2xl font-bold mt-2">{{ total_birds }}</p>
+            <p class="text-gray-500 text-sm">Total Birds</p>
+            <span class="text-xs text-green-600">+{{ growth_percent }}%</span>
+        </div>
+        
+        <div class="card text-center">
+            <i class="fas fa-egg text-3xl text-secondary"></i>
+            <p class="text-2xl font-bold mt-2">{{ total_eggs }}</p>
+            <p class="text-gray-500 text-sm">Eggs Today</p>
+            <span class="text-xs text-green-600">Production: {{ production_rate }}%</span>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="card text-center">
+            <i class="fas fa-chart-line text-3xl text-blue-500"></i>
+            <p class="text-2xl font-bold mt-2">{{ mortality_rate }}%</p>
+            <p class="text-gray-500 text-sm">Mortality Rate</p>
+        </div>
+        
+        <div class="card text-center">
+            <i class="fas fa-dollar-sign text-3xl text-yellow-500"></i>
+            <p class="text-2xl font-bold mt-2">UGX {{ total_sales|floatformat:0 }}</p>
+            <p class="text-gray-500 text-sm">This Month</p>
+        </div>
+    </div>
+    
+    <!-- Active Flocks -->
+    <div class="mb-6">
+        <div class="flex justify-between items-center mb-3">
+            <h2 class="text-lg font-bold">Active Flocks</h2>
+            <a href="/farm/flocks/" class="text-primary text-sm">View All →</a>
+        </div>
+        
+        {% for flock in active_flocks %}
+        <div class="card">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h3 class="font-semibold">{{ flock.batch_name }}</h3>
+                    <p class="text-sm text-gray-500">{{ flock.bird_type }} • {{ flock.breed }}</p>
+                    <p class="text-sm mt-1">{{ flock.quantity }} birds • {{ flock.age_days }} days old</p>
+                </div>
+                <div class="text-right">
+                    <span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span>
+                </div>
+            </div>
+            <div class="mt-3">
+                <div class="bg-gray-200 rounded-full h-2">
+                    <div class="bg-primary h-2 rounded-full" style="width: {{ flock.progress_percent }}%"></div>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">{{ flock.expected_harvest_date|default:'In progress' }}</p>
+            </div>
+        </div>
+        {% empty %}
+        <div class="card text-center text-gray-500">
+            <i class="fas fa-chicken text-4xl mb-2"></i>
+            <p>No active flocks</p>
+            <button class="btn-primary mt-3 text-sm py-2 px-4">Add Flock</button>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-3 gap-3 mb-6">
+        <button onclick="openModal('daily-record')" class="bg-white p-3 rounded-xl text-center shadow-sm">
+            <i class="fas fa-clipboard-list text-primary text-xl"></i>
+            <p class="text-xs mt-1">Daily Record</p>
+        </button>
+        <button onclick="openModal('vaccination')" class="bg-white p-3 rounded-xl text-center shadow-sm">
+            <i class="fas fa-syringe text-primary text-xl"></i>
+            <p class="text-xs mt-1">Vaccination</p>
+        </button>
+        <button onclick="openModal('expense')" class="bg-white p-3 rounded-xl text-center shadow-sm">
+            <i class="fas fa-receipt text-primary text-xl"></i>
+            <p class="text-xs mt-1">Add Expense</p>
+        </button>
+    </div>
+    
+    <!-- Recent Alerts -->
+    <div>
+        <h2 class="text-lg font-bold mb-3">Recent Alerts</h2>
+        {% for alert in alerts %}
+        <div class="flex items-start space-x-3 p-3 bg-yellow-50 rounded-xl mb-2">
+            <i class="fas fa-bell text-yellow-500 mt-1"></i>
+            <div class="flex-1">
+                <p class="text-sm">{{ alert.message }}</p>
+                <p class="text-xs text-gray-500">{{ alert.created_at|timesince }} ago</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function openModal(type) {
+    alert(`Open ${type} form modal`);
+}
+
+// Fetch dashboard data via AJAX
+$(document).ready(function() {
+    $.ajax({
+        url: '/api/v1/analytics/farmer/dashboard/',
+        method: 'GET',
+        headers: {
+            'Authorization': 'Bearer {{ token }}'
+        },
+        success: function(data) {
+            console.log('Dashboard data updated', data);
+        }
+    });
+});
+</script>
+{% endblock %}
