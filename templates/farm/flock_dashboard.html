@@ -1,0 +1,653 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Flock Dashboard - KUKUNET{% endblock %}
+
+{% block content %}
+<div class="p-4" id="flockDashboard">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-4">
+        <button onclick="history.back()" class="text-primary">
+            <i class="fas fa-arrow-left text-xl"></i>
+        </button>
+        <h1 class="text-xl font-bold text-gray-800" id="batchName">Loading...</h1>
+        <button onclick="refreshDashboard()" class="text-primary">
+            <i class="fas fa-sync-alt"></i>
+        </button>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="text-center py-8">
+        <div class="spinner mx-auto"></div>
+        <p class="text-gray-500 mt-2">Loading dashboard...</p>
+    </div>
+
+    <!-- Dashboard Content (Hidden until loaded) -->
+    <div id="dashboardContent" class="hidden">
+        <!-- Batch Info Card -->
+        <div class="bg-gradient-to-r from-primary to-primary-light text-white rounded-2xl p-4 mb-4">
+            <div class="flex justify-between items-start">
+                <div>
+                    <p class="text-sm opacity-90" id="birdType"></p>
+                    <p class="text-xs opacity-75 mt-1" id="batchNumber"></p>
+                </div>
+                <span class="px-3 py-1 bg-white/20 rounded-full text-sm" id="statusBadge"></span>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mt-3">
+                <div>
+                    <p class="text-xs opacity-75">Start Date</p>
+                    <p class="font-semibold" id="startDate"></p>
+                </div>
+                <div>
+                    <p class="text-xs opacity-75">Age</p>
+                    <p class="font-semibold" id="age"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons - 4 Column Grid -->
+        <div class="grid grid-cols-4 gap-2 mb-4">
+            <a href="#" id="vaccinationsLink" class="bg-purple-600 text-white py-2 rounded-xl text-sm text-center">
+                <i class="fas fa-syringe mr-1"></i>Vaccinations
+            </a>
+            <a href="#" id="recordsLink" class="bg-blue-600 text-white py-2 rounded-xl text-sm text-center">
+                <i class="fas fa-clipboard-list mr-1"></i>Records
+            </a>
+            <a href="#" id="healthLink" class="bg-green-600 text-white py-2 rounded-xl text-sm text-center">
+                <i class="fas fa-heartbeat mr-1"></i>Health
+            </a>
+            <a href="#" id="feedLink" class="bg-yellow-600 text-white py-2 rounded-xl text-sm text-center">
+                <i class="fas fa-seedling mr-1"></i>Feed
+            </a>
+        </div>
+
+        <!-- Quick Stats Row -->
+        <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500">Total Birds</p>
+                        <p class="text-2xl font-bold" id="liveBirds">0</p>
+                    </div>
+                    <i class="fas fa-chicken text-3xl text-primary opacity-50"></i>
+                </div>
+            </div>
+            <div class="card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500">Mortality Rate</p>
+                        <p class="text-2xl font-bold text-red-600" id="mortalityRate">0%</p>
+                    </div>
+                    <i class="fas fa-chart-line text-3xl text-primary opacity-50"></i>
+                </div>
+            </div>
+            <div class="card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500">Eggs/Day</p>
+                        <p class="text-2xl font-bold text-blue-600" id="eggProduction">0</p>
+                    </div>
+                    <i class="fas fa-egg text-3xl text-primary opacity-50"></i>
+                </div>
+            </div>
+            <div class="card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500">Avg Weight</p>
+                        <p class="text-2xl font-bold" id="avgWeight">0 kg</p>
+                    </div>
+                    <i class="fas fa-weight-hanging text-3xl text-primary opacity-50"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Today's Record Card -->
+        <div class="card mb-4">
+            <h2 class="font-bold text-gray-800 mb-3">
+                <i class="fas fa-calendar-day text-primary mr-2"></i>Today's Record
+            </h2>
+            <div id="todayRecord" class="space-y-2">
+                <!-- Dynamic content -->
+            </div>
+            <button onclick="openDailyRecordModal()" class="w-full btn-primary mt-3 text-sm py-2">
+                <i class="fas fa-plus mr-1"></i>Add Today's Record
+            </button>
+        </div>
+
+        <!-- Feed Summary Card -->
+        <div class="card mb-4">
+            <h2 class="font-bold text-gray-800 mb-3">
+                <i class="fas fa-seedling text-primary mr-2"></i>Feed Summary
+            </h2>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="text-center">
+                    <p class="text-xs text-gray-500">Total Feed Consumed</p>
+                    <p class="text-lg font-bold" id="totalFeed">0 kg</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-xs text-gray-500">Feed Cost</p>
+                    <p class="text-lg font-bold text-yellow-600" id="feedCost">UGX 0</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-xs text-gray-500">FCR</p>
+                    <p class="text-lg font-bold text-blue-600" id="fcr">0.00</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-xs text-gray-500">Today's Feed</p>
+                    <p class="text-lg font-bold" id="todayFeed">0 kg</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weekly Performance -->
+        <div class="card mb-4">
+            <h2 class="font-bold text-gray-800 mb-3">
+                <i class="fas fa-chart-line text-primary mr-2"></i>This Week
+            </h2>
+            <div class="grid grid-cols-3 gap-2 text-center">
+                <div>
+                    <p class="text-xs text-gray-500">Mortality</p>
+                    <p class="font-bold text-red-600" id="weekMortality">0</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500">Feed Used</p>
+                    <p class="font-bold" id="weekFeed">0 kg</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500">Eggs</p>
+                    <p class="font-bold text-blue-600" id="weekEggs">0</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Summary -->
+        <div class="card mb-4">
+            <h2 class="font-bold text-gray-800 mb-3">
+                <i class="fas fa-dollar-sign text-primary mr-2"></i>This Month
+            </h2>
+            <div class="space-y-2">
+                <div class="flex justify-between">
+                    <span class="text-sm text-gray-500">Total Expenses</span>
+                    <span class="font-semibold text-red-600" id="monthExpenses">UGX 0</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-sm text-gray-500">Total Sales</span>
+                    <span class="font-semibold text-green-600" id="monthSales">UGX 0</span>
+                </div>
+                <div class="flex justify-between pt-2 border-t">
+                    <span class="font-semibold">Gross Profit</span>
+                    <span class="font-bold text-primary" id="grossProfit">UGX 0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Vaccinations -->
+        <div class="card">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="font-bold text-gray-800">
+                    <i class="fas fa-syringe text-primary mr-2"></i>Upcoming Vaccinations
+                </h2>
+                <a href="#" id="viewAllVaccinationsLink" class="text-primary text-sm">
+                    View All →
+                </a>
+            </div>
+            <div id="vaccinationsList" class="space-y-2">
+                <div class="text-center py-4">
+                    <div class="spinner-small mx-auto"></div>
+                    <p class="text-gray-500 text-sm mt-2">Loading vaccinations...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Daily Record Modal -->
+<div id="dailyRecordModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-screen overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">
+                    <i class="fas fa-clipboard-list text-primary mr-2"></i>Daily Record
+                </h2>
+                <button onclick="closeModal('dailyRecordModal')" class="text-gray-500">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="dailyRecordForm">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label class="block text-sm font-bold mb-1">Opening Bird Count</label>
+                    <input type="number" id="openingCount" class="form-input" required>
+                </div>
+                <div class="mb-3">
+                    <label class="block text-sm font-bold mb-1">Mortality</label>
+                    <input type="number" id="mortality" class="form-input" value="0">
+                </div>
+                <div class="mb-3">
+                    <label class="block text-sm font-bold mb-1">Birds Sold</label>
+                    <input type="number" id="birdsSold" class="form-input" value="0">
+                </div>
+                <div class="mb-3">
+                    <label class="block text-sm font-bold mb-1">Feed Given (kg)</label>
+                    <input type="number" step="0.1" id="feedGiven" class="form-input" value="0">
+                </div>
+                <div class="mb-3">
+                    <label class="block text-sm font-bold mb-1">Feed Cost (UGX)</label>
+                    <input type="number" step="0.01" id="feedCost" class="form-input" value="0">
+                </div>
+                <div class="mb-3">
+                    <label class="block text-sm font-bold mb-1">Water Consumed (L)</label>
+                    <input type="number" step="0.1" id="waterConsumed" class="form-input" value="0">
+                </div>
+                <div class="mb-3" id="eggsField">
+                    <label class="block text-sm font-bold mb-1">Eggs Collected</label>
+                    <input type="number" id="eggsCollected" class="form-input" value="0">
+                </div>
+                <div class="mb-3" id="weightField">
+                    <label class="block text-sm font-bold mb-1">Avg Weight (kg)</label>
+                    <input type="number" step="0.01" id="avgWeight" class="form-input" placeholder="e.g., 1.8">
+                </div>
+                <div class="mb-3">
+                    <label class="block text-sm font-bold mb-1">Health Status</label>
+                    <select id="healthStatus" class="form-input">
+                        <option value="GOOD">Good - No Issues</option>
+                        <option value="WATCH">Watch - Monitor Closely</option>
+                        <option value="MINOR">Minor Illness</option>
+                        <option value="SERIOUS">Serious Illness</option>
+                        <option value="OUTBREAK">Disease Outbreak</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="block text-sm font-bold mb-1">Observations</label>
+                    <textarea id="observations" rows="2" class="form-input" placeholder="Any issues or notes..."></textarea>
+                </div>
+                <button type="submit" class="btn-primary w-full">
+                    <i class="fas fa-save mr-2"></i>Save Record
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let flockId = null;
+let flockData = null;
+
+// Get flock ID from URL
+const urlParts = window.location.pathname.split('/');
+flockId = urlParts[urlParts.indexOf('flock') + 1];
+
+// Set dynamic links
+$('#vaccinationsLink').attr('href', `/farm/flock/${flockId}/vaccinations/`);
+$('#recordsLink').attr('href', `/farm/flock/${flockId}/records/`);
+$('#healthLink').attr('href', `/farm/flock/${flockId}/health/`);
+$('#feedLink').attr('href', `/farm/flock/${flockId}/feed/`);
+$('#viewAllVaccinationsLink').attr('href', `/farm/flock/${flockId}/vaccinations/`);
+
+// Get CSRF token
+function getCSRFToken() {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === ('csrftoken' + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function loadDashboard() {
+    console.log('Loading dashboard for flock:', flockId);
+    
+    fetch(`/api/v1/farms/flocks/${flockId}/dashboard/`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        console.log('Dashboard API response status:', response.status);
+        if (response.status === 401) {
+            window.location.href = '/login/';
+            return;
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data) {
+            console.log('Dashboard data received:', data);
+            flockData = data;
+            updateDashboard(data);
+            $('#loadingState').addClass('hidden');
+            $('#dashboardContent').removeClass('hidden');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading dashboard:', error);
+        $('#loadingState').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-2"></i>
+                <p class="text-gray-500">Error loading dashboard</p>
+                <button onclick="loadDashboard()" class="btn-primary mt-3 text-sm py-2 px-4">
+                    <i class="fas fa-sync-alt mr-1"></i>Retry
+                </button>
+            </div>
+        `);
+    });
+}
+
+function updateDashboard(data) {
+    // Batch Info
+    $('#batchName').text(data.batch_info.name);
+    $('#birdType').text(`${data.batch_info.bird_type} - ${data.batch_info.breed}`);
+    $('#batchNumber').text(data.batch_info.batch_number);
+    $('#startDate').text(data.batch_info.start_date);
+    $('#age').text(`${data.batch_info.age_days} days (${data.batch_info.age_weeks} weeks)`);
+    
+    const statusColors = {
+        'ACTIVE': 'bg-green-500',
+        'PLANNED': 'bg-yellow-500',
+        'COMPLETED': 'bg-gray-500'
+    };
+    $('#statusBadge').text(data.batch_info.status).removeClass().addClass(`px-3 py-1 rounded-full text-sm ${statusColors[data.batch_info.status] || 'bg-gray-500'}`);
+    
+    // Today's Record
+    if (data.today.has_record) {
+        $('#todayRecord').html(`
+            <div class="grid grid-cols-2 gap-2 text-sm">
+                <div><span class="text-gray-500">Live Birds:</span> ${data.today.live_birds}</div>
+                <div><span class="text-gray-500">Mortality:</span> ${data.today.mortality}</div>
+                <div><span class="text-gray-500">Feed:</span> ${data.today.feed_consumed_kg} kg</div>
+                <div><span class="text-gray-500">Water:</span> ${data.today.water_consumed_liters} L</div>
+                ${data.today.eggs_collected ? `<div><span class="text-gray-500">Eggs:</span> ${data.today.eggs_collected}</div>` : ''}
+                ${data.today.avg_weight_kg ? `<div><span class="text-gray-500">Avg Weight:</span> ${data.today.avg_weight_kg} kg</div>` : ''}
+            </div>
+        `);
+    } else {
+        $('#todayRecord').html('<p class="text-gray-500 text-sm text-center">No record for today. Add one below.</p>');
+    }
+    
+    // KPIs
+    $('#liveBirds').text(data.today.live_birds || 0);
+    $('#mortalityRate').text(`${data.kpis.mortality_rate?.toFixed(1) || 0}%`);
+    $('#eggProduction').text(Math.round(data.today.eggs_collected || 0));
+    $('#avgWeight').text(data.today.avg_weight_kg ? `${data.today.avg_weight_kg} kg` : 'N/A');
+    
+    // Weekly
+    $('#weekMortality').text(data.this_week.mortality);
+    $('#weekFeed').text(`${data.this_week.feed_used_kg?.toFixed(1) || 0} kg`);
+    $('#weekEggs').text(data.this_week.eggs_produced || 0);
+    
+    // Financial
+    $('#monthExpenses').text(`UGX ${(data.this_month.total_expenses || 0).toLocaleString()}`);
+    $('#monthSales').text(`UGX ${(data.this_month.total_sales || 0).toLocaleString()}`);
+    $('#grossProfit').text(`UGX ${(data.this_month.gross_profit || 0).toLocaleString()}`);
+    
+    // Load feed summary separately
+    loadFeedSummary();
+    
+    // Vaccinations - With scheduled dates
+    if (data.upcoming_vaccinations && data.upcoming_vaccinations.length > 0) {
+        let vacHtml = '';
+        data.upcoming_vaccinations.slice(0, 3).forEach(vac => {
+            const urgency = vac.days_until <= 3 ? 'text-red-600' : 'text-yellow-600';
+            const urgencyBg = vac.days_until <= 3 ? 'bg-red-50' : 'bg-yellow-50';
+            
+            let scheduledDateColor = 'text-gray-600';
+            let scheduledDateIcon = 'far fa-calendar-alt';
+            if (vac.days_until <= 0) {
+                scheduledDateColor = 'text-red-600';
+                scheduledDateIcon = 'fas fa-exclamation-circle';
+            } else if (vac.days_until <= 3) {
+                scheduledDateColor = 'text-orange-600';
+                scheduledDateIcon = 'fas fa-clock';
+            } else {
+                scheduledDateColor = 'text-green-600';
+                scheduledDateIcon = 'far fa-calendar-check';
+            }
+            
+            vacHtml += `
+                <div class="flex justify-between items-center p-3 ${urgencyBg} rounded-lg">
+                    <div class="flex-1">
+                        <span class="font-medium text-gray-800">${vac.vaccine}</span>
+                        <p class="text-xs text-gray-500 mt-0.5">Due at week ${vac.due_week}</p>
+                        <p class="text-xs ${scheduledDateColor} mt-1 flex items-center gap-1">
+                            <i class="${scheduledDateIcon}"></i>
+                            <span>Scheduled: ${vac.scheduled_date}</span>
+                        </p>
+                    </div>
+                    <div class="text-right">
+                        ${vac.days_until > 0 ? 
+                            `<span class="${urgency} font-semibold">${vac.days_until} days</span>` :
+                            `<span class="text-red-600 font-semibold">Overdue!</span>`
+                        }
+                        ${vac.days_until === 1 ? '<p class="text-xs text-orange-500 mt-1">Tomorrow!</p>' : ''}
+                        ${vac.days_until === 0 ? '<p class="text-xs text-red-500 mt-1">Due today!</p>' : ''}
+                        ${vac.days_until < 0 ? '<p class="text-xs text-red-500 mt-1">Past due date</p>' : ''}
+                    </div>
+                </div>
+            `;
+        });
+        $('#vaccinationsList').html(vacHtml);
+    } else {
+        $('#vaccinationsList').html(`
+            <div class="text-center py-4">
+                <i class="fas fa-check-circle text-green-500 text-2xl mb-2"></i>
+                <p class="text-gray-500 text-sm">No upcoming vaccinations</p>
+                <p class="text-xs text-gray-400 mt-1">All vaccinations are up to date</p>
+            </div>
+        `);
+    }
+    
+    // Alerts
+    if (data.alerts && data.alerts.length > 0) {
+        data.alerts.forEach(alert => {
+            showToast(alert.message, alert.severity === 'URGENT' ? 'error' : 'warning');
+        });
+    }
+}
+
+function loadFeedSummary() {
+    fetch(`/api/v1/farms/feed-summary/?batch=${flockId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data) {
+            $('#totalFeed').text(data.total_feed_consumed_kg?.toFixed(1) || '0');
+            $('#feedCost').text(`UGX ${Math.round(data.total_feed_cost || 0).toLocaleString()}`);
+            $('#fcr').text(data.feed_conversion_ratio_fcr?.toFixed(2) || '0.00');
+            
+            // Get today's feed consumption
+            fetch(`/api/v1/farms/feed-consumption/?batch=${flockId}`, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(consumptions => {
+                const today = new Date().toISOString().split('T')[0];
+                const todayRecord = consumptions?.find(c => c.date === today);
+                $('#todayFeed').text(todayRecord?.total_daily_consumption?.toFixed(1) || '0');
+            });
+        }
+    })
+    .catch(error => console.error('Error loading feed summary:', error));
+}
+
+// Daily Record Form
+$('#dailyRecordForm').on('submit', function(e) {
+    e.preventDefault();
+    showLoading();
+    
+    const birdType = $('#birdType').text().split(' - ')[0];
+    
+    const formData = {
+        batch: flockId,
+        date: new Date().toISOString().split('T')[0],
+        opening_bird_count: parseInt($('#openingCount').val()),
+        mortality: parseInt($('#mortality').val()) || 0,
+        birds_sold: parseInt($('#birdsSold').val()) || 0,
+        feed_given_kg: parseFloat($('#feedGiven').val()) || 0,
+        feed_cost: parseFloat($('#feedCost').val()) || 0,
+        water_consumed_liters: parseFloat($('#waterConsumed').val()) || 0,
+        health_status: $('#healthStatus').val(),
+        farmer_observations: $('#observations').val()
+    };
+    
+    if (birdType === 'LAYERS' || birdType === 'KUROILER') {
+        formData.eggs_collected = parseInt($('#eggsCollected').val()) || 0;
+    }
+    
+    if (birdType === 'BROILERS' || birdType === 'KUROILER') {
+        formData.avg_weight_kg = parseFloat($('#avgWeight').val()) || null;
+    }
+    
+    fetch(`/api/v1/farms/daily-records/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) {
+            throw new Error(data.message || data.error || `HTTP ${response.status}`);
+        }
+        return data;
+    })
+    .then(data => {
+        hideLoading();
+        showToast('Daily record saved successfully!');
+        closeModal('dailyRecordModal');
+        loadDashboard();
+        $('#dailyRecordForm')[0].reset();
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error:', error);
+        showToast(error.message || 'Error saving record', 'error');
+    });
+});
+
+function openDailyRecordModal() {
+    $('#openingCount').val($('#liveBirds').text());
+    const today = new Date().toISOString().split('T')[0];
+    $('#dailyRecordForm input[type="date"]').val(today);
+    $('#dailyRecordModal').removeClass('hidden');
+    
+    const birdType = $('#birdType').text().split(' - ')[0];
+    if (birdType === 'LAYERS' || birdType === 'KUROILER') {
+        $('#eggsField').show();
+    } else {
+        $('#eggsField').hide();
+    }
+    if (birdType === 'BROILERS' || birdType === 'KUROILER') {
+        $('#weightField').show();
+    } else {
+        $('#weightField').hide();
+    }
+}
+
+function closeModal(modalId) {
+    $(`#${modalId}`).addClass('hidden');
+}
+
+function refreshDashboard() {
+    $('#loadingState').removeClass('hidden');
+    $('#dashboardContent').addClass('hidden');
+    loadDashboard();
+}
+
+function showLoading() {
+    if ($('#loadingOverlay').length) {
+        $('#loadingOverlay').removeClass('hidden');
+    }
+}
+
+function hideLoading() {
+    if ($('#loadingOverlay').length) {
+        $('#loadingOverlay').addClass('hidden');
+    }
+}
+
+function showToast(message, type = 'success') {
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+    const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+    const toast = $(`
+        <div class="fixed bottom-20 left-1/2 transform -translate-x-1/2 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in">
+            <i class="fas ${icon} mr-2"></i>
+            ${message}
+        </div>
+    `);
+    $('body').append(toast);
+    setTimeout(() => {
+        toast.fadeOut(300, () => toast.remove());
+    }, 3000);
+}
+
+// Initialize
+$(document).ready(function() {
+    loadDashboard();
+});
+</script>
+
+<style>
+.spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #2E7D32;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+.spinner-small {
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #2E7D32;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 10px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+</style>
+{% endblock %}

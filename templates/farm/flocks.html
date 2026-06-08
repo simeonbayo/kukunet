@@ -1,0 +1,733 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Flock Management - KUKUNET{% endblock %}
+
+{% block content %}
+<div class="p-4">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">
+                <i class="fas fa-chicken text-primary mr-2"></i>Flock Management
+            </h1>
+            <p class="text-sm text-gray-500 mt-1" id="farmName">Loading farm...</p>
+        </div>
+        <button onclick="openAddFlockModal()" class="bg-primary text-white px-4 py-2 rounded-xl text-sm">
+            <i class="fas fa-plus mr-1"></i>Add Flock
+        </button>
+    </div>
+
+    <!-- Flock Stats -->
+    <div class="grid grid-cols-4 gap-3 mb-6">
+        <div class="card text-center">
+            <i class="fas fa-chicken text-primary text-xl"></i>
+            <p class="text-xl font-bold mt-1" id="activeCount">0</p>
+            <p class="text-xs text-gray-500">Active Flocks</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-chart-line text-primary text-xl"></i>
+            <p class="text-xl font-bold mt-1" id="totalBirds">0</p>
+            <p class="text-xs text-gray-500">Total Birds</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-egg text-primary text-xl"></i>
+            <p class="text-xl font-bold mt-1" id="dailyEggs">0</p>
+            <p class="text-xs text-gray-500">Eggs/Day</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-percent text-primary text-xl"></i>
+            <p class="text-xl font-bold mt-1" id="avgMortality">0%</p>
+            <p class="text-xs text-gray-500">Mortality Rate</p>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="flex space-x-2 mb-4 border-b">
+        <button class="tab-btn active px-4 py-2 text-primary border-b-2 border-primary" data-status="ACTIVE">
+            <i class="fas fa-play-circle mr-1"></i>Active
+        </button>
+        <button class="tab-btn px-4 py-2 text-gray-500" data-status="PLANNED">
+            <i class="fas fa-calendar mr-1"></i>Planned
+        </button>
+        <button class="tab-btn px-4 py-2 text-gray-500" data-status="COMPLETED">
+            <i class="fas fa-check-circle mr-1"></i>Completed
+        </button>
+        <button class="tab-btn px-4 py-2 text-gray-500" data-status="ALL">
+            <i class="fas fa-list mr-1"></i>All
+        </button>
+    </div>
+
+    <!-- Flocks List -->
+    <div id="flocksList" class="space-y-3">
+        <div class="text-center py-8">
+            <div class="spinner mx-auto"></div>
+            <p class="text-gray-500 mt-2">Loading flocks...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Add Flock Modal -->
+<div id="addFlockModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-screen overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">
+                    <i class="fas fa-plus-circle text-primary mr-2"></i>Add New Flock
+                </h2>
+                <button onclick="closeModal('addFlockModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="addFlockForm">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Farm</label>
+                    <select id="flockFarm" class="form-input" required>
+                        <option value="">Select Farm</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">House (Optional)</label>
+                    <select id="flockHouse" class="form-input">
+                        <option value="">Select House</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Batch Name</label>
+                    <input type="text" id="batchName" class="form-input" placeholder="e.g., Batch 001 - ISA Brown" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Bird Type</label>
+                    <select id="birdType" class="form-input" required>
+                        <option value="LAYERS">Layers</option>
+                        <option value="BROILERS">Broilers</option>
+                        <option value="KUROILER">Kuroiler</option>
+                        <option value="BREEDERS">Breeders</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Breed</label>
+                    <select id="breed" class="form-input" required>
+                        <option value="ISA_BROWN">ISA Brown</option>
+                        <option value="BOVANS_BROWN">Bovans Brown</option>
+                        <option value="HYLINE">Hy-Line</option>
+                        <option value="LOHMANN">Lohmann</option>
+                        <option value="ROSS">Ross</option>
+                        <option value="COBB">Cobb</option>
+                        <option value="KUROILER">Kuroiler</option>
+                        <option value="LOCAL">Local Breed</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Initial Quantity</label>
+                    <input type="number" id="initialQuantity" class="form-input" placeholder="Number of birds" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Start Date</label>
+                    <input type="date" id="startDate" class="form-input" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Expected End Date (Optional)</label>
+                    <input type="date" id="expectedEndDate" class="form-input">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Cost per Bird (UGX)</label>
+                    <input type="number" step="0.01" id="costPerBird" class="form-input" placeholder="0">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Status</label>
+                    <select id="flockStatus" class="form-input">
+                        <option value="PLANNED">Planned</option>
+                        <option value="ACTIVE">Active</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="CULLED">Culled</option>
+                        <option value="DEPLETED">Depleted</option>
+                        <option value="SICK">Sick/Quarantined</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary w-full">
+                    <i class="fas fa-save mr-2"></i>Create Flock
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Flock Modal -->
+<div id="editFlockModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-screen overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">
+                    <i class="fas fa-edit text-primary mr-2"></i>Edit Flock
+                </h2>
+                <button onclick="closeModal('editFlockModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="editFlockForm">
+                {% csrf_token %}
+                <input type="hidden" id="editFlockId">
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Farm</label>
+                    <select id="editFlockFarm" class="form-input" required>
+                        <option value="">Select Farm</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">House (Optional)</label>
+                    <select id="editFlockHouse" class="form-input">
+                        <option value="">Select House</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Batch Name</label>
+                    <input type="text" id="editBatchName" class="form-input" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Bird Type</label>
+                    <select id="editBirdType" class="form-input" required>
+                        <option value="LAYERS">Layers</option>
+                        <option value="BROILERS">Broilers</option>
+                        <option value="KUROILER">Kuroiler</option>
+                        <option value="BREEDERS">Breeders</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Breed</label>
+                    <select id="editBreed" class="form-input" required>
+                        <option value="ISA_BROWN">ISA Brown</option>
+                        <option value="BOVANS_BROWN">Bovans Brown</option>
+                        <option value="HYLINE">Hy-Line</option>
+                        <option value="LOHMANN">Lohmann</option>
+                        <option value="ROSS">Ross</option>
+                        <option value="COBB">Cobb</option>
+                        <option value="KUROILER">Kuroiler</option>
+                        <option value="LOCAL">Local Breed</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Current Quantity</label>
+                    <input type="number" id="editCurrentQuantity" class="form-input" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Status</label>
+                    <select id="editStatus" class="form-input" required>
+                        <option value="PLANNED">Planned</option>
+                        <option value="ACTIVE">Active</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="CULLED">Culled</option>
+                        <option value="DEPLETED">Depleted</option>
+                        <option value="SICK">Sick/Quarantined</option>
+                    </select>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 btn-primary">
+                        <i class="fas fa-save mr-2"></i>Update
+                    </button>
+                    <button type="button" onclick="deleteFlock()" class="flex-1 bg-red-600 text-white py-2 rounded-xl">
+                        <i class="fas fa-trash mr-2"></i>Delete
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Get farm ID from URL
+const urlParams = new URLSearchParams(window.location.search);
+const farmId = urlParams.get('farm_id');
+
+let currentStatus = 'ACTIVE';
+let currentEditFlockId = null;
+let housesList = [];
+
+// Get CSRF token
+function getCSRFToken() {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === ('csrftoken' + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Load farms for dropdown
+function loadFarms() {
+    fetch('/api/v1/farms/farms/', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(farms => {
+        let options = '<option value="">Select Farm</option>';
+        farms.forEach(farm => {
+            options += `<option value="${farm.id}" ${farmId == farm.id ? 'selected' : ''} data-name="${farm.farm_name}">${farm.farm_name}</option>`;
+        });
+        $('#flockFarm').html(options);
+        $('#editFlockFarm').html(options);
+        
+        if (farmId) {
+            const farmName = $('#flockFarm option:selected').data('name');
+            $('#farmName').text(farmName);
+            // Load houses for the selected farm
+            loadHousesForFarm(farmId);
+        } else {
+            $('#farmName').text('All Farms');
+        }
+    })
+    .catch(error => console.error('Error loading farms:', error));
+}
+
+// Load houses for a specific farm
+function loadHousesForFarm(farmId) {
+    if (!farmId) {
+        $('#flockHouse').html('<option value="">Select House</option>');
+        $('#editFlockHouse').html('<option value="">Select House</option>');
+        return;
+    }
+    
+    console.log('Loading houses for farm:', farmId);
+    
+    fetch(`/api/v1/farms/houses/?farm=${farmId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(houses => {
+        housesList = houses;
+        console.log('Houses loaded:', houses);
+        
+        let options = '<option value="">Select House (Optional)</option>';
+        houses.forEach(house => {
+            options += `<option value="${house.id}">${house.name} (Capacity: ${house.capacity}, Type: ${house.house_type})</option>`;
+        });
+        $('#flockHouse').html(options);
+        $('#editFlockHouse').html(options);
+    })
+    .catch(error => console.error('Error loading houses:', error));
+}
+
+// Load houses when farm changes in add modal
+$('#flockFarm').on('change', function() {
+    const selectedFarmId = $(this).val();
+    loadHousesForFarm(selectedFarmId);
+});
+
+// Load houses when farm changes in edit modal
+$('#editFlockFarm').on('change', function() {
+    const selectedFarmId = $(this).val();
+    loadHousesForFarm(selectedFarmId);
+});
+
+// Load flocks
+function loadFlocks() {
+    let url = '/api/v1/farms/flocks/';
+    const params = new URLSearchParams();
+    
+    if (currentStatus !== 'ALL') {
+        params.append('status', currentStatus);
+    }
+    if (farmId) {
+        params.append('farm', farmId);
+    }
+    
+    if (params.toString()) {
+        url += '?' + params.toString();
+    }
+    
+    fetch(url, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(flocks => {
+        if (flocks && Array.isArray(flocks)) {
+            displayFlocks(flocks);
+            updateStats(flocks);
+        } else {
+            displayFlocks([]);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading flocks:', error);
+        $('#flocksList').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-2"></i>
+                <p class="text-gray-500">Error loading flocks. Please try again.</p>
+                <button onclick="loadFlocks()" class="btn-primary mt-3 text-sm py-2 px-4">
+                    <i class="fas fa-sync-alt mr-1"></i>Retry
+                </button>
+            </div>
+        `);
+    });
+}
+
+function displayFlocks(flocks) {
+    if (!flocks || flocks.length === 0) {
+        $('#flocksList').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-chicken text-4xl text-gray-300 mb-2"></i>
+                <p class="text-gray-500">No ${currentStatus.toLowerCase()} flocks found</p>
+                <button onclick="openAddFlockModal()" class="btn-primary mt-3 text-sm py-2 px-4">
+                    <i class="fas fa-plus mr-1"></i>Add Flock
+                </button>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = '';
+    flocks.forEach(flock => {
+        const statusColor = flock.status === 'ACTIVE' ? 'green' : 
+                           (flock.status === 'PLANNED' ? 'yellow' : 'gray');
+        const statusIcon = flock.status === 'ACTIVE' ? 'fa-play-circle' : 
+                          (flock.status === 'PLANNED' ? 'fa-clock' : 'fa-check-circle');
+        const mortalityRate = flock.mortality_rate || 0;
+        const healthPercent = 100 - mortalityRate;
+        const ageDays = flock.age_days || 0;
+        const ageWeeks = Math.floor(ageDays / 7);
+        
+        html += `
+            <div class="card hover:shadow-md transition">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h3 class="font-bold text-lg">${escapeHtml(flock.batch_name)}</h3>
+                        <p class="text-sm text-gray-500">
+                            <i class="fas fa-tag mr-1"></i>${flock.batch_number}
+                        </p>
+                        ${flock.house_name ? `<p class="text-xs text-gray-400 mt-1"><i class="fas fa-building mr-1"></i>House: ${flock.house_name}</p>` : ''}
+                    </div>
+                    <span class="px-2 py-1 text-xs rounded-full bg-${statusColor}-100 text-${statusColor}-700">
+                        <i class="fas ${statusIcon} mr-1"></i>${flock.status}
+                    </span>
+                </div>
+                
+                <div class="grid grid-cols-4 gap-2 text-center text-sm mb-3">
+                    <div>
+                        <span class="text-gray-500">Birds</span>
+                        <p class="font-semibold">${flock.current_quantity}/${flock.initial_quantity}</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Age</span>
+                        <p class="font-semibold">${ageDays} days (${ageWeeks} wks)</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Mortality</span>
+                        <p class="font-semibold text-red-600">${mortalityRate}%</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Eggs/Day</span>
+                        <p class="font-semibold text-blue-600">${Math.round(flock.avg_daily_eggs || 0)}</p>
+                    </div>
+                </div>
+                
+                <div class="mb-2">
+                    <div class="bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div class="bg-green-600 h-2 rounded-full" style="width: ${healthPercent}%"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>Health: ${healthPercent}%</span>
+                        <span>Mortality: ${mortalityRate}%</span>
+                    </div>
+                </div>
+                
+                <div class="flex gap-2">
+                    <a href="/farm/flock/${flock.id}/dashboard/" class="flex-1 bg-primary text-white py-2 rounded-xl text-sm text-center">
+                        <i class="fas fa-tachometer-alt mr-1"></i>Dashboard
+                    </a>
+                    <a href="/farm/flock/${flock.id}/records/" class="flex-1 border border-primary text-primary py-2 rounded-xl text-sm text-center">
+                        <i class="fas fa-clipboard-list mr-1"></i>Records
+                    </a>
+                    <button onclick="editFlock(${flock.id})" class="text-blue-600 p-2">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    $('#flocksList').html(html);
+}
+
+function updateStats(flocks) {
+    let activeCount = 0;
+    let totalBirds = 0;
+    let dailyEggs = 0;
+    let totalMortality = 0;
+    
+    flocks.forEach(flock => {
+        if (flock.status === 'ACTIVE') activeCount++;
+        totalBirds += flock.current_quantity || 0;
+        dailyEggs += flock.avg_daily_eggs || 0;
+        totalMortality += flock.mortality_rate || 0;
+    });
+    
+    $('#activeCount').text(activeCount);
+    $('#totalBirds').text(totalBirds);
+    $('#dailyEggs').text(Math.round(dailyEggs));
+    $('#avgMortality').text(flocks.length ? Math.round(totalMortality / flocks.length) : 0);
+}
+
+// Tab switching
+$('.tab-btn').click(function() {
+    $('.tab-btn').removeClass('active text-primary border-b-2 border-primary').addClass('text-gray-500');
+    $(this).addClass('active text-primary border-b-2 border-primary');
+    currentStatus = $(this).data('status');
+    loadFlocks();
+});
+
+// Add Flock Form
+$('#addFlockForm').on('submit', function(e) {
+    e.preventDefault();
+    showLoading();
+    
+    const formData = {
+        farm: parseInt($('#flockFarm').val()),
+        house: $('#flockHouse').val() ? parseInt($('#flockHouse').val()) : null,
+        batch_name: $('#batchName').val(),
+        bird_type: $('#birdType').val(),
+        breed: $('#breed').val(),
+        initial_quantity: parseInt($('#initialQuantity').val()),
+        start_date: $('#startDate').val(),
+        expected_end_date: $('#expectedEndDate').val() || null,
+        cost_per_bird: parseFloat($('#costPerBird').val()) || 0,
+        status: $('#flockStatus').val()
+    };
+    
+    fetch('/api/v1/farms/flocks/', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || data.error || `HTTP ${response.status}`);
+        return data;
+    })
+    .then(data => {
+        hideLoading();
+        if (data.id) {
+            showToast('Flock created successfully!');
+            closeModal('addFlockModal');
+            $('#addFlockForm')[0].reset();
+            loadFlocks();
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error:', error);
+        showToast(error.message || 'Error creating flock', 'error');
+    });
+});
+
+// Edit Flock
+function editFlock(flockId) {
+    currentEditFlockId = flockId;
+    
+    fetch(`/api/v1/farms/flocks/${flockId}/`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(flock => {
+        console.log('Flock data:', flock);
+        
+        $('#editFlockId').val(flock.id);
+        $('#editFlockFarm').val(flock.farm);
+        $('#editBatchName').val(flock.batch_name);
+        $('#editBirdType').val(flock.bird_type);
+        $('#editBreed').val(flock.breed);
+        $('#editCurrentQuantity').val(flock.current_quantity);
+        $('#editStatus').val(flock.status);
+        
+        // Load houses for the selected farm and set the selected house
+        loadHousesForFarm(flock.farm);
+        
+        // Set the house after houses are loaded (with a small delay)
+        setTimeout(() => {
+            if (flock.house) {
+                $('#editFlockHouse').val(flock.house);
+                console.log('Set house to:', flock.house);
+            }
+        }, 500);
+        
+        $('#editFlockModal').removeClass('hidden');
+    })
+    .catch(error => console.error('Error loading flock:', error));
+}
+
+// Update Flock
+$('#editFlockForm').on('submit', function(e) {
+    e.preventDefault();
+    showLoading();
+    
+    const flockId = $('#editFlockId').val();
+    const formData = {
+        farm: parseInt($('#editFlockFarm').val()),
+        house: $('#editFlockHouse').val() ? parseInt($('#editFlockHouse').val()) : null,
+        batch_name: $('#editBatchName').val(),
+        bird_type: $('#editBirdType').val(),
+        breed: $('#editBreed').val(),
+        current_quantity: parseInt($('#editCurrentQuantity').val()),
+        status: $('#editStatus').val()
+    };
+    
+    fetch(`/api/v1/farms/flocks/${flockId}/`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || `HTTP ${response.status}`);
+        return data;
+    })
+    .then(data => {
+        hideLoading();
+        showToast('Flock updated successfully!');
+        closeModal('editFlockModal');
+        loadFlocks();
+    })
+    .catch(error => {
+        hideLoading();
+        showToast(error.message || 'Error updating flock', 'error');
+    });
+});
+
+// Delete Flock
+function deleteFlock() {
+    const flockId = $('#editFlockId').val();
+    
+    if (confirm('Are you sure you want to delete this flock? This action cannot be undone.')) {
+        showLoading();
+        
+        fetch(`/api/v1/farms/flocks/${flockId}/`, {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            hideLoading();
+            if (response.status === 204 || response.ok) {
+                showToast('Flock deleted successfully!');
+                closeModal('editFlockModal');
+                loadFlocks();
+            } else {
+                showToast('Error deleting flock', 'error');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            showToast('Network error', 'error');
+        });
+    }
+}
+
+function openAddFlockModal() {
+    loadFarms();
+    $('#addFlockModal').removeClass('hidden');
+    const today = new Date().toISOString().split('T')[0];
+    $('#startDate').val(today);
+}
+
+function closeModal(modalId) {
+    $(`#${modalId}`).addClass('hidden');
+}
+
+function showLoading() {
+    if ($('#loadingOverlay').length) $('#loadingOverlay').removeClass('hidden');
+}
+
+function hideLoading() {
+    if ($('#loadingOverlay').length) $('#loadingOverlay').addClass('hidden');
+}
+
+function showToast(message, type = 'success') {
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+    const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+    const toast = $(`
+        <div class="fixed bottom-20 left-1/2 transform -translate-x-1/2 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in">
+            <i class="fas ${icon} mr-2"></i>${message}
+        </div>
+    `);
+    $('body').append(toast);
+    setTimeout(() => toast.fadeOut(300, () => toast.remove()), 3000);
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Initialize
+$(document).ready(function() {
+    loadFarms();
+    loadFlocks();
+});
+</script>
+
+<style>
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, 10px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #2E7D32;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}

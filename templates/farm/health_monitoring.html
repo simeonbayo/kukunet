@@ -1,0 +1,955 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Health Monitoring - KUKUNET{% endblock %}
+
+{% block content %}
+<div class="p-4">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <div class="flex items-center gap-3 mb-2">
+                <a href="/farm/flock/{{ flock_id }}/dashboard/" class="text-primary hover:text-primary-dark">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </a>
+                <h1 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-heartbeat text-primary mr-2"></i>Health Monitoring
+                </h1>
+            </div>
+            <p class="text-sm text-gray-500" id="flockName">Loading flock...</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="/farm/flock/{{ flock_id }}/dashboard/" class="text-primary hover:underline text-sm">
+                <i class="fas fa-tachometer-alt mr-1"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-4 gap-3 mb-6">
+        <div class="card text-center">
+            <i class="fas fa-stethoscope text-primary text-xl"></i>
+            <p class="text-2xl font-bold mt-1" id="healthScore">0%</p>
+            <p class="text-xs text-gray-500">Health Score</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-syringe text-primary text-xl"></i>
+            <p class="text-2xl font-bold mt-1" id="activeTreatments">0</p>
+            <p class="text-xs text-gray-500">Active Treatments</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-chart-line text-primary text-xl"></i>
+            <p class="text-2xl font-bold mt-1" id="recoveryRate">0%</p>
+            <p class="text-xs text-gray-500">Recovery Rate</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-exclamation-triangle text-primary text-xl"></i>
+            <p class="text-2xl font-bold mt-1" id="activeAlerts">0</p>
+            <p class="text-xs text-gray-500">Active Alerts</p>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex space-x-2 mb-4 border-b">
+        <button class="tab-btn active px-4 py-2 text-primary border-b-2 border-primary" data-tab="health-records">
+            <i class="fas fa-notes-medical mr-1"></i>Health Records
+        </button>
+        <button class="tab-btn px-4 py-2 text-gray-500" data-tab="treatments">
+            <i class="fas fa-syringe mr-1"></i>Treatments
+        </button>
+        <button class="tab-btn px-4 py-2 text-gray-500" data-tab="alerts">
+            <i class="fas fa-bell mr-1"></i>Alerts
+        </button>
+        <button class="tab-btn px-4 py-2 text-gray-500" data-tab="add-record">
+            <i class="fas fa-plus mr-1"></i>Add Record
+        </button>
+    </div>
+
+    <!-- Health Records Tab -->
+    <div id="health-records-tab" class="tab-content">
+        <div id="healthRecordsList" class="space-y-3">
+            <div class="text-center py-8">
+                <div class="spinner mx-auto"></div>
+                <p class="text-gray-500 mt-2">Loading health records...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Treatments Tab -->
+    <div id="treatments-tab" class="tab-content hidden">
+        <div id="treatmentsList" class="space-y-3">
+            <div class="text-center py-8">
+                <div class="spinner mx-auto"></div>
+                <p class="text-gray-500 mt-2">Loading treatments...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts Tab -->
+    <div id="alerts-tab" class="tab-content hidden">
+        <div id="alertsList" class="space-y-3">
+            <div class="text-center py-8">
+                <div class="spinner mx-auto"></div>
+                <p class="text-gray-500 mt-2">Loading alerts...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Health Record Tab -->
+    <div id="add-record-tab" class="tab-content hidden">
+        <div class="card">
+            <h2 class="font-bold text-gray-800 mb-4">
+                <i class="fas fa-notes-medical text-primary mr-2"></i>Add Health Record
+            </h2>
+            <form id="addHealthRecordForm">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Health Status</label>
+                    <select id="healthStatus" class="form-input" required>
+                        <option value="EXCELLENT">Excellent - No Issues</option>
+                        <option value="GOOD">Good - Minor Observations</option>
+                        <option value="FAIR">Fair - Needs Attention</option>
+                        <option value="POOR">Poor - Health Issues</option>
+                        <option value="CRITICAL">Critical - Immediate Action Required</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Disease Type (if any)</label>
+                    <select id="diseaseType" class="form-input">
+                        <option value="">None</option>
+                        <option value="RESPIRATORY">Respiratory Disease</option>
+                        <option value="DIGESTIVE">Digestive Issue</option>
+                        <option value="EGG_DROP">Egg Drop Syndrome</option>
+                        <option value="LAMENESS">Lameness/Leg Issues</option>
+                        <option value="NEWCASTLE">Newcastle Disease</option>
+                        <option value="GUMBORO">Gumboro (IBD)</option>
+                        <option value="FOWL_POX">Fowl Pox</option>
+                        <option value="COCCIDIOSIS">Coccidiosis</option>
+                        <option value="SALMONELLA">Salmonella</option>
+                        <option value="OTHER">Other</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Affected Birds Count</label>
+                    <input type="number" id="affectedBirds" class="form-input" value="0" placeholder="Number of sick birds">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Symptoms Observed</label>
+                    <textarea id="symptoms" rows="3" class="form-input" placeholder="List all observed symptoms..."></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div>
+                        <label class="block text-sm font-bold mb-2">Temperature (°C)</label>
+                        <input type="number" step="0.1" id="temp" class="form-input" placeholder="e.g., 38.5">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-2">Humidity (%)</label>
+                        <input type="number" step="0.1" id="humidity" class="form-input" placeholder="e.g., 65">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Clinical Signs</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="reducedFeed" class="mr-2"> Reduced Feed Intake
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="reducedWater" class="mr-2"> Reduced Water Intake
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="respiratory" class="mr-2"> Respiratory Distress
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="diarrhea" class="mr-2"> Diarrhea
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="swollenEyes" class="mr-2"> Swollen Eyes
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="lethargy" class="mr-2"> Lethargy/Depression
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="suddenDeath" class="mr-2"> Sudden Death
+                        </label>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Observations</label>
+                    <textarea id="observations" rows="2" class="form-input" placeholder="Additional observations..."></textarea>
+                </div>
+                <button type="submit" class="btn-primary w-full">
+                    <i class="fas fa-save mr-2"></i>Save Health Record
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- View Health Record Modal -->
+<div id="viewHealthRecordModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-screen overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">
+                    <i class="fas fa-notes-medical text-primary mr-2"></i>Health Record Details
+                </h2>
+                <button onclick="closeModal('viewHealthRecordModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="healthRecordDetails" class="space-y-3">
+                <!-- Dynamic content -->
+            </div>
+            <div class="mt-4 flex gap-2">
+                <button onclick="closeModal('viewHealthRecordModal')" class="flex-1 btn-primary">
+                    Close
+                </button>
+                <button id="addTreatmentFromViewBtn" class="flex-1 bg-green-600 text-white py-2 rounded-xl">
+                    <i class="fas fa-syringe mr-1"></i>Add Treatment
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Treatment Modal -->
+<div id="addTreatmentModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-screen overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">
+                    <i class="fas fa-syringe text-primary mr-2"></i>Add Treatment
+                </h2>
+                <button onclick="closeModal('addTreatmentModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="addTreatmentForm">
+                {% csrf_token %}
+                <input type="hidden" id="treatmentHealthRecordId">
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Treatment Type</label>
+                    <select id="treatmentType" class="form-input" required>
+                        <option value="MEDICATION">Medication</option>
+                        <option value="VACCINATION">Vaccination</option>
+                        <option value="DEWORMING">Deworming</option>
+                        <option value="ISOLATION">Isolation/Quarantine</option>
+                        <option value="SUPPORTIVE">Supportive Care</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Medication Name</label>
+                    <input type="text" id="medicationName" class="form-input" placeholder="Name of medication">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Dosage</label>
+                    <input type="text" id="dosage" class="form-input" placeholder="e.g., 2ml per liter">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Administration Method</label>
+                    <select id="adminMethod" class="form-input">
+                        <option value="DRINKING_WATER">Drinking Water</option>
+                        <option value="FEED">Mixed in Feed</option>
+                        <option value="INJECTION">Injection</option>
+                        <option value="TOPICAL">Topical Application</option>
+                        <option value="ORAL">Oral/Drenching</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Duration (days)</label>
+                    <input type="number" id="durationDays" class="form-input" value="1">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Birds Treated</label>
+                    <input type="number" id="birdsTreated" class="form-input" value="0">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Cost per Unit (UGX)</label>
+                    <input type="number" step="0.01" id="costPerUnit" class="form-input" value="0">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Withdrawal Period (days)</label>
+                    <input type="number" id="withdrawalDays" class="form-input" value="0">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Prescribed By (Vet)</label>
+                    <input type="text" id="prescribedBy" class="form-input" placeholder="Veterinarian name">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Notes</label>
+                    <textarea id="treatmentNotes" rows="2" class="form-input" placeholder="Additional notes..."></textarea>
+                </div>
+                <button type="submit" class="btn-primary w-full">
+                    <i class="fas fa-save mr-2"></i>Add Treatment
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+const flockId = {{ flock_id }};
+let currentTab = 'health-records';
+let currentViewHealthRecordId = null;
+
+// Get CSRF token
+function getCSRFToken() {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === ('csrftoken' + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Tab switching
+$('.tab-btn').click(function() {
+    const tab = $(this).data('tab');
+    currentTab = tab;
+    
+    $('.tab-btn').removeClass('active text-primary border-b-2 border-primary').addClass('text-gray-500');
+    $(this).addClass('active text-primary border-b-2 border-primary');
+    
+    $('.tab-content').addClass('hidden');
+    $(`#${tab}-tab`).removeClass('hidden');
+    
+    // Load data based on tab
+    if (tab === 'health-records') loadHealthRecords();
+    else if (tab === 'treatments') loadTreatments();
+    else if (tab === 'alerts') loadAlerts();
+});
+
+// Load flock info
+function loadFlockInfo() {
+    fetch(`/api/v1/farms/flocks/${flockId}/`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(flock => {
+        $('#flockName').text(`${flock.batch_name} - Health Monitoring`);
+    });
+}
+
+// Load health records
+function loadHealthRecords() {
+    fetch(`/api/v1/farms/health-records/?batch=${flockId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(records => {
+        if (records && Array.isArray(records)) {
+            displayHealthRecords(records);
+            updateStats(records);
+        } else {
+            displayHealthRecords([]);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading health records:', error);
+        $('#healthRecordsList').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-2"></i>
+                <p class="text-gray-500">Error loading health records</p>
+                <button onclick="loadHealthRecords()" class="btn-primary mt-3 text-sm py-2 px-4">
+                    <i class="fas fa-sync-alt mr-1"></i>Retry
+                </button>
+            </div>
+        `);
+    });
+}
+
+function displayHealthRecords(records) {
+    if (!records || records.length === 0) {
+        $('#healthRecordsList').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-notes-medical text-4xl text-gray-300 mb-2"></i>
+                <p class="text-gray-500">No health records found</p>
+                <button onclick="switchToAddRecord()" class="btn-primary mt-3 text-sm py-2 px-4">
+                    <i class="fas fa-plus mr-1"></i>Add First Health Record
+                </button>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = '';
+    records.forEach(record => {
+        const statusColors = {
+            'EXCELLENT': 'green',
+            'GOOD': 'blue',
+            'FAIR': 'yellow',
+            'POOR': 'orange',
+            'CRITICAL': 'red'
+        };
+        const color = statusColors[record.health_status] || 'gray';
+        
+        html += `
+            <div class="card border-l-4 border-${color}-500">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <h3 class="font-bold">${record.record_date}</h3>
+                        <p class="text-sm font-semibold text-${color}-600">${record.health_status_display}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="viewHealthRecord(${record.id})" class="text-blue-600 text-sm">
+                            <i class="fas fa-eye mr-1"></i>View Details
+                        </button>
+                        <button onclick="deleteHealthRecord(${record.id})" class="text-red-600 text-sm">
+                            <i class="fas fa-trash mr-1"></i>Delete
+                        </button>
+                    </div>
+                </div>
+                ${record.disease_type ? `<p class="text-sm text-gray-600 mt-1">Disease: ${record.disease_type_display}</p>` : ''}
+                ${record.affected_birds_count > 0 ? `<p class="text-sm text-gray-600">Affected: ${record.affected_birds_count} birds (${record.affected_percentage}%)</p>` : ''}
+                ${record.symptoms ? `<p class="text-sm text-gray-600 mt-1">Symptoms: ${record.symptoms.substring(0, 100)}${record.symptoms.length > 100 ? '...' : ''}</p>` : ''}
+                <div class="mt-2">
+                    <button onclick="openAddTreatmentModal(${record.id})" class="text-green-600 text-sm">
+                        <i class="fas fa-syringe mr-1"></i>Add Treatment
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    $('#healthRecordsList').html(html);
+}
+
+// View Health Record Details
+function viewHealthRecord(recordId) {
+    currentViewHealthRecordId = recordId;
+    
+    fetch(`/api/v1/farms/health-records/${recordId}/`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(record => {
+        const statusColors = {
+            'EXCELLENT': 'text-green-600',
+            'GOOD': 'text-blue-600',
+            'FAIR': 'text-yellow-600',
+            'POOR': 'text-orange-600',
+            'CRITICAL': 'text-red-600'
+        };
+        const colorClass = statusColors[record.health_status] || 'text-gray-600';
+        
+        let html = `
+            <div class="bg-gray-50 rounded-lg p-3">
+                <p class="text-sm text-gray-500">Date</p>
+                <p class="font-medium">${record.record_date}</p>
+            </div>
+            <div class="bg-gray-50 rounded-lg p-3">
+                <p class="text-sm text-gray-500">Health Status</p>
+                <p class="font-medium ${colorClass}">${record.health_status_display}</p>
+            </div>
+        `;
+        
+        if (record.disease_type_display) {
+            html += `
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <p class="text-sm text-gray-500">Disease Type</p>
+                    <p class="font-medium">${record.disease_type_display}</p>
+                </div>
+            `;
+        }
+        
+        if (record.affected_birds_count > 0) {
+            html += `
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <p class="text-sm text-gray-500">Affected Birds</p>
+                    <p class="font-medium">${record.affected_birds_count} birds (${record.affected_percentage}%)</p>
+                </div>
+            `;
+        }
+        
+        if (record.symptoms) {
+            html += `
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <p class="text-sm text-gray-500">Symptoms</p>
+                    <p class="font-medium">${record.symptoms}</p>
+                </div>
+            `;
+        }
+        
+        if (record.observations) {
+            html += `
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <p class="text-sm text-gray-500">Observations</p>
+                    <p class="font-medium">${record.observations}</p>
+                </div>
+            `;
+        }
+        
+        // Clinical signs
+        const signs = [];
+        if (record.reduced_feed_intake) signs.push('Reduced Feed Intake');
+        if (record.reduced_water_intake) signs.push('Reduced Water Intake');
+        if (record.respiratory_distress) signs.push('Respiratory Distress');
+        if (record.diarrhea) signs.push('Diarrhea');
+        if (record.swollen_eyes) signs.push('Swollen Eyes');
+        if (record.lethargy) signs.push('Lethargy/Depression');
+        if (record.sudden_death) signs.push('Sudden Death');
+        
+        if (signs.length > 0) {
+            html += `
+                <div class="bg-gray-50 rounded-lg p-3">
+                    <p class="text-sm text-gray-500">Clinical Signs</p>
+                    <div class="flex flex-wrap gap-1 mt-1">
+                        ${signs.map(sign => `<span class="px-2 py-1 bg-gray-200 rounded-full text-xs">${sign}</span>`).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        $('#healthRecordDetails').html(html);
+        $('#viewHealthRecordModal').removeClass('hidden');
+    })
+    .catch(error => {
+        console.error('Error loading health record details:', error);
+        showToast('Error loading record details', 'error');
+    });
+}
+
+// Add Treatment from View Modal
+$('#addTreatmentFromViewBtn').click(function() {
+    if (currentViewHealthRecordId) {
+        closeModal('viewHealthRecordModal');
+        openAddTreatmentModal(currentViewHealthRecordId);
+    }
+});
+
+// Load treatments
+function loadTreatments() {
+    fetch(`/api/v1/farms/treatment-records/?batch=${flockId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(treatments => {
+        if (treatments && Array.isArray(treatments)) {
+            displayTreatments(treatments);
+        } else {
+            displayTreatments([]);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading treatments:', error);
+        $('#treatmentsList').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-2"></i>
+                <p class="text-gray-500">Error loading treatments</p>
+                <button onclick="loadTreatments()" class="btn-primary mt-3 text-sm py-2 px-4">
+                    <i class="fas fa-sync-alt mr-1"></i>Retry
+                </button>
+            </div>
+        `);
+    });
+}
+
+function displayTreatments(treatments) {
+    if (!treatments || treatments.length === 0) {
+        $('#treatmentsList').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-syringe text-4xl text-gray-300 mb-2"></i>
+                <p class="text-gray-500">No treatment records found</p>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = '';
+    treatments.forEach(treatment => {
+        html += `
+            <div class="card">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <h3 class="font-bold">${treatment.medication_name || treatment.treatment_type}</h3>
+                        <p class="text-sm text-gray-500">Started: ${treatment.start_date}</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="viewTreatmentDetails(${treatment.id})" class="text-blue-600 text-sm">
+                            <i class="fas fa-eye mr-1"></i>View
+                        </button>
+                        <button onclick="deleteTreatment(${treatment.id})" class="text-red-600 text-sm">
+                            <i class="fas fa-trash mr-1"></i>Delete
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-sm mt-2">
+                    <div><span class="text-gray-500">Dosage:</span> ${treatment.dosage || '-'}</div>
+                    <div><span class="text-gray-500">Method:</span> ${treatment.administration_method || '-'}</div>
+                    <div><span class="text-gray-500">Duration:</span> ${treatment.duration_days} days</div>
+                    <div><span class="text-gray-500">Birds Treated:</span> ${treatment.quantity_treated}</div>
+                </div>
+                ${treatment.notes ? `<p class="text-sm text-gray-500 mt-2">${treatment.notes}</p>` : ''}
+            </div>
+        `;
+    });
+    $('#treatmentsList').html(html);
+}
+
+// Load alerts
+function loadAlerts() {
+    fetch(`/api/v1/farms/health-alerts/?batch=${flockId}&is_resolved=false`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(alerts => {
+        if (alerts && Array.isArray(alerts)) {
+            displayAlerts(alerts);
+        } else {
+            displayAlerts([]);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading alerts:', error);
+        $('#alertsList').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-2"></i>
+                <p class="text-gray-500">Error loading alerts</p>
+            </div>
+        `);
+    });
+}
+
+function displayAlerts(alerts) {
+    if (!alerts || alerts.length === 0) {
+        $('#alertsList').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-check-circle text-green-500 text-4xl mb-2"></i>
+                <p class="text-gray-500">No active alerts</p>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = '';
+    alerts.forEach(alert => {
+        const severityColor = alert.severity === 'CRITICAL' ? 'red' :
+                             (alert.severity === 'HIGH' ? 'orange' : 
+                             (alert.severity === 'MEDIUM' ? 'yellow' : 'blue'));
+        html += `
+            <div class="card border-l-4 border-${severityColor}-500">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="font-bold">${alert.title}</h3>
+                        <p class="text-sm text-gray-600 mt-1">${alert.message}</p>
+                        ${alert.recommended_action ? `<p class="text-sm text-blue-600 mt-1"><i class="fas fa-info-circle mr-1"></i>${alert.recommended_action}</p>` : ''}
+                    </div>
+                    <div class="flex gap-2">
+                        <span class="px-2 py-1 text-xs rounded-full bg-${severityColor}-100 text-${severityColor}-700">
+                            ${alert.severity}
+                        </span>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <button onclick="resolveAlert(${alert.id})" class="text-green-600 text-sm">
+                        <i class="fas fa-check-circle mr-1"></i>Mark Resolved
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    $('#alertsList').html(html);
+}
+
+function updateStats(records) {
+    let totalScore = 0;
+    
+    records.forEach(record => {
+        const scoreMap = {'EXCELLENT': 100, 'GOOD': 75, 'FAIR': 50, 'POOR': 25, 'CRITICAL': 10};
+        totalScore += scoreMap[record.health_status] || 50;
+    });
+    
+    const avgScore = records.length > 0 ? Math.round(totalScore / records.length) : 100;
+    $('#healthScore').text(avgScore + '%');
+    
+    // Load treatments count
+    fetch(`/api/v1/farms/treatment-records/?batch=${flockId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(treatments => {
+        $('#activeTreatments').text(treatments?.length || 0);
+    });
+    
+    // Load alerts count
+    fetch(`/api/v1/farms/health-alerts/?batch=${flockId}&is_resolved=false`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(alerts => {
+        $('#activeAlerts').text(alerts?.length || 0);
+    });
+}
+
+// Add Health Record
+$('#addHealthRecordForm').on('submit', function(e) {
+    e.preventDefault();
+    showLoading();
+    
+    const formData = {
+        batch: flockId,
+        health_status: $('#healthStatus').val(),
+        disease_type: $('#diseaseType').val(),
+        affected_birds_count: parseInt($('#affectedBirds').val()) || 0,
+        symptoms: $('#symptoms').val(),
+        temperature_c: $('#temp').val() ? parseFloat($('#temp').val()) : null,
+        humidity_percent: $('#humidity').val() ? parseFloat($('#humidity').val()) : null,
+        reduced_feed_intake: $('#reducedFeed').is(':checked'),
+        reduced_water_intake: $('#reducedWater').is(':checked'),
+        respiratory_distress: $('#respiratory').is(':checked'),
+        diarrhea: $('#diarrhea').is(':checked'),
+        swollen_eyes: $('#swollenEyes').is(':checked'),
+        lethargy: $('#lethargy').is(':checked'),
+        sudden_death: $('#suddenDeath').is(':checked'),
+        observations: $('#observations').val()
+    };
+    
+    fetch('/api/v1/farms/health-records/', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || `HTTP ${response.status}`);
+        return data;
+    })
+    .then(data => {
+        hideLoading();
+        showToast('Health record saved successfully!');
+        $('#addHealthRecordForm')[0].reset();
+        switchToHealthRecords();
+        loadHealthRecords();
+    })
+    .catch(error => {
+        hideLoading();
+        showToast(error.message || 'Error saving health record', 'error');
+    });
+});
+
+// Add Treatment Modal
+function openAddTreatmentModal(healthRecordId) {
+    $('#treatmentHealthRecordId').val(healthRecordId);
+    $('#addTreatmentModal').removeClass('hidden');
+}
+
+$('#addTreatmentForm').on('submit', function(e) {
+    e.preventDefault();
+    showLoading();
+    
+    const formData = {
+        batch: flockId,
+        health_record: $('#treatmentHealthRecordId').val(),
+        treatment_type: $('#treatmentType').val(),
+        medication_name: $('#medicationName').val(),
+        dosage: $('#dosage').val(),
+        administration_method: $('#adminMethod').val(),
+        duration_days: parseInt($('#durationDays').val()),
+        quantity_treated: parseInt($('#birdsTreated').val()),
+        cost_per_unit: parseFloat($('#costPerUnit').val()) || 0,
+        withdrawal_days: parseInt($('#withdrawalDays').val()) || 0,
+        prescribed_by: $('#prescribedBy').val(),
+        notes: $('#treatmentNotes').val()
+    };
+    
+    fetch('/api/v1/farms/treatment-records/', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || `HTTP ${response.status}`);
+        return data;
+    })
+    .then(data => {
+        hideLoading();
+        showToast('Treatment added successfully!');
+        closeModal('addTreatmentModal');
+        $('#addTreatmentForm')[0].reset();
+        loadTreatments();
+        loadHealthRecords();
+    })
+    .catch(error => {
+        hideLoading();
+        showToast(error.message || 'Error adding treatment', 'error');
+    });
+});
+
+function switchToAddRecord() {
+    $('.tab-btn').removeClass('active text-primary border-b-2 border-primary').addClass('text-gray-500');
+    $('.tab-btn[data-tab="add-record"]').addClass('active text-primary border-b-2 border-primary');
+    $('.tab-content').addClass('hidden');
+    $('#add-record-tab').removeClass('hidden');
+}
+
+function switchToHealthRecords() {
+    $('.tab-btn').removeClass('active text-primary border-b-2 border-primary').addClass('text-gray-500');
+    $('.tab-btn[data-tab="health-records"]').addClass('active text-primary border-b-2 border-primary');
+    $('.tab-content').addClass('hidden');
+    $('#health-records-tab').removeClass('hidden');
+}
+
+function closeModal(modalId) {
+    $(`#${modalId}`).addClass('hidden');
+}
+
+function deleteHealthRecord(id) {
+    if (confirm('Are you sure you want to delete this health record?')) {
+        fetch(`/api/v1/farms/health-records/${id}/`, {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.status === 204 || response.ok) {
+                showToast('Health record deleted');
+                loadHealthRecords();
+            }
+        });
+    }
+}
+
+function deleteTreatment(id) {
+    if (confirm('Are you sure you want to delete this treatment record?')) {
+        fetch(`/api/v1/farms/treatment-records/${id}/`, {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.status === 204 || response.ok) {
+                showToast('Treatment deleted');
+                loadTreatments();
+            }
+        });
+    }
+}
+
+function resolveAlert(id) {
+    fetch(`/api/v1/farms/health-alerts/${id}/resolve/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(() => {
+        showToast('Alert marked as resolved');
+        loadAlerts();
+        loadHealthRecords();
+    });
+}
+
+function viewTreatmentDetails(id) {
+    showToast('Treatment details feature coming soon!');
+}
+
+function showLoading() {
+    if ($('#loadingOverlay').length) $('#loadingOverlay').removeClass('hidden');
+}
+
+function hideLoading() {
+    if ($('#loadingOverlay').length) $('#loadingOverlay').addClass('hidden');
+}
+
+function showToast(message, type = 'success') {
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+    const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+    const toast = $(`
+        <div class="fixed bottom-20 left-1/2 transform -translate-x-1/2 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in">
+            <i class="fas ${icon} mr-2"></i>${message}
+        </div>
+    `);
+    $('body').append(toast);
+    setTimeout(() => toast.fadeOut(300, () => toast.remove()), 3000);
+}
+
+// Initialize
+$(document).ready(function() {
+    loadFlockInfo();
+    loadHealthRecords();
+});
+</script>
+
+<style>
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, 10px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #2E7D32;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}

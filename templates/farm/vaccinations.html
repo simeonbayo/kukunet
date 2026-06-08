@@ -1,0 +1,522 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Vaccination Management - KUKUNET{% endblock %}
+
+{% block content %}
+<div class="p-4">
+    <!-- Header with Back Link -->
+    <div class="mb-6">
+        <div class="flex items-center gap-3 mb-2">
+            <a href="/farm/flock/{{ flock_id }}/dashboard/" class="text-primary hover:text-primary-dark">
+                <i class="fas fa-arrow-left text-xl"></i>
+            </a>
+            <h1 class="text-2xl font-bold text-gray-800">
+                <i class="fas fa-syringe text-primary mr-2"></i>Vaccination Management
+            </h1>
+        </div>
+        <p class="text-sm text-gray-500" id="flockName">Loading flock...</p>
+    </div>
+
+    <!-- Back to Dashboard Link -->
+    <div class="mb-4">
+        <a href="/farm/flock/{{ flock_id }}/dashboard/" class="text-primary hover:underline inline-flex items-center gap-1 text-sm">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>Back to Flock Dashboard</span>
+        </a>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-4 gap-3 mb-6">
+        <div class="card text-center">
+            <i class="fas fa-calendar text-primary text-xl"></i>
+            <p class="text-2xl font-bold mt-1" id="totalScheduled">0</p>
+            <p class="text-xs text-gray-500">Scheduled</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-check-circle text-green-600 text-xl"></i>
+            <p class="text-2xl font-bold mt-1" id="totalCompleted">0</p>
+            <p class="text-xs text-gray-500">Completed</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-clock text-yellow-600 text-xl"></i>
+            <p class="text-2xl font-bold mt-1" id="totalOverdue">0</p>
+            <p class="text-xs text-gray-500">Overdue</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-chart-line text-primary text-xl"></i>
+            <p class="text-2xl font-bold mt-1" id="completionRate">0%</p>
+            <p class="text-xs text-gray-500">Completion Rate</p>
+        </div>
+    </div>
+
+    <!-- Flock Quick Info -->
+    <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl p-4 mb-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <p class="text-sm text-gray-500">Flock Information</p>
+                <p class="font-bold text-gray-800" id="quickFlockName">Loading...</p>
+                <div class="flex gap-4 mt-2 text-sm">
+                    <span class="text-gray-600" id="quickBirdType"></span>
+                    <span class="text-gray-600" id="quickAge"></span>
+                    <span class="text-gray-600" id="quickStatus"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Regenerate Schedule Link -->
+    <div class="text-right mb-4">
+        <a href="#" onclick="regenerateSchedule(); return false;" class="text-yellow-600 hover:underline inline-flex items-center gap-1 text-sm">
+            <i class="fas fa-sync-alt"></i>
+            <span>Regenerate Schedule</span>
+        </a>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="flex space-x-2 mb-4 border-b">
+        <button class="tab-btn active px-4 py-2 text-primary border-b-2 border-primary" data-status="ALL">
+            All
+        </button>
+        <button class="tab-btn px-4 py-2 text-gray-500" data-status="PENDING">
+            <i class="fas fa-clock mr-1"></i>Pending
+        </button>
+        <button class="tab-btn px-4 py-2 text-gray-500" data-status="COMPLETED">
+            <i class="fas fa-check-circle mr-1"></i>Completed
+        </button>
+        <button class="tab-btn px-4 py-2 text-gray-500" data-status="OVERDUE">
+            <i class="fas fa-exclamation-triangle mr-1"></i>Overdue
+        </button>
+    </div>
+
+    <!-- Vaccination Schedule List -->
+    <div id="vaccinationsList" class="space-y-3">
+        <div class="text-center py-8">
+            <div class="spinner mx-auto"></div>
+            <p class="text-gray-500 mt-2">Loading vaccination schedule...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Complete Vaccination Modal -->
+<div id="completeModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">
+                    <i class="fas fa-syringe text-primary mr-2"></i>Complete Vaccination
+                </h2>
+                <button onclick="closeModal('completeModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <input type="hidden" id="completeScheduleId">
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Vaccine</label>
+                <p class="text-gray-700 font-medium" id="modalVaccineName"></p>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Administration Method</label>
+                <p class="text-gray-700" id="modalAdminMethod"></p>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Dosage</label>
+                <p class="text-gray-700" id="modalDosage"></p>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Administered Date</label>
+                <input type="date" id="administeredDate" class="form-input" required>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Administered By</label>
+                <input type="text" id="administeredBy" class="form-input" placeholder="Name of person">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Batch Number</label>
+                <input type="text" id="vaccineBatchNumber" class="form-input" placeholder="Vaccine batch/lot number">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Quantity Used</label>
+                <input type="number" id="quantityUsed" class="form-input" placeholder="Number of doses" value="0">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Cost per Dose (UGX)</label>
+                <input type="number" step="0.01" id="costPerDose" class="form-input" value="0">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Reaction Notes</label>
+                <textarea id="reactionNotes" rows="2" class="form-input" placeholder="Any adverse reactions observed..."></textarea>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-bold mb-2">Notes</label>
+                <textarea id="completeNotes" rows="2" class="form-input" placeholder="Additional notes..."></textarea>
+            </div>
+            <button onclick="completeVaccination()" class="btn-primary w-full">
+                <i class="fas fa-check-circle mr-2"></i>Mark as Completed
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+const flockId = {{ flock_id }};
+let currentStatus = 'ALL';
+
+// Get CSRF token
+function getCSRFToken() {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === ('csrftoken' + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Load flock info
+function loadFlockInfo() {
+    fetch(`/api/v1/farms/flocks/${flockId}/`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(flock => {
+        $('#flockName').text(`${flock.batch_name} - Vaccination Schedule (${flock.bird_type})`);
+        
+        // Update quick info
+        $('#quickFlockName').text(flock.batch_name);
+        $('#quickBirdType').html(`<i class="fas fa-chicken mr-1"></i>${flock.bird_type} - ${flock.breed}`);
+        $('#quickAge').html(`<i class="fas fa-calendar-alt mr-1"></i>${flock.age_days} days (${flock.age_weeks} weeks)`);
+        
+        const statusColor = flock.status === 'ACTIVE' ? 'text-green-600' : (flock.status === 'PLANNED' ? 'text-yellow-600' : 'text-gray-600');
+        $('#quickStatus').html(`<i class="fas fa-circle mr-1 ${statusColor}"></i>${flock.status}`);
+    });
+}
+
+// Load vaccination schedules
+function loadVaccinations() {
+    let url = `/api/v1/farms/flock-vaccination-schedules/?batch=${flockId}`;
+    
+    fetch(url, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(schedules => {
+        if (schedules && Array.isArray(schedules)) {
+            let filtered = schedules;
+            if (currentStatus !== 'ALL') {
+                filtered = schedules.filter(s => s.status === currentStatus);
+            }
+            displayVaccinations(filtered);
+            updateStats(schedules);
+        } else {
+            displayVaccinations([]);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading vaccinations:', error);
+        $('#vaccinationsList').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-2"></i>
+                <p class="text-gray-500">Error loading vaccination schedule</p>
+                <button onclick="loadVaccinations()" class="btn-primary mt-3 text-sm py-2 px-4">
+                    <i class="fas fa-sync-alt mr-1"></i>Retry
+                </button>
+            </div>
+        `);
+    });
+}
+
+function displayVaccinations(schedules) {
+    if (!schedules || schedules.length === 0) {
+        $('#vaccinationsList').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-syringe text-4xl text-gray-300 mb-2"></i>
+                <p class="text-gray-500">No vaccination schedules found</p>
+                <a href="#" onclick="regenerateSchedule(); return false;" class="text-primary hover:underline text-sm mt-2 inline-block">
+                    <i class="fas fa-sync-alt mr-1"></i>Generate Schedule
+                </a>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = '';
+    schedules.forEach(schedule => {
+        const statusColor = schedule.status === 'COMPLETED' ? 'green' :
+                           (schedule.status === 'OVERDUE' ? 'red' : 'yellow');
+        const statusIcon = schedule.status === 'COMPLETED' ? 'fa-check-circle' :
+                          (schedule.status === 'OVERDUE' ? 'fa-exclamation-triangle' : 'fa-clock');
+        
+        const isOverdue = schedule.status === 'OVERDUE';
+        const isCompleted = schedule.status === 'COMPLETED';
+        
+        html += `
+            <div class="card hover:shadow-md transition ${isOverdue ? 'border-l-4 border-red-500' : ''}">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h3 class="font-bold text-lg">${escapeHtml(schedule.vaccine_name)}</h3>
+                        <p class="text-sm text-gray-500">${schedule.vaccine_type_display || schedule.vaccine_type}</p>
+                        <p class="text-xs text-gray-400 mt-1">Week ${schedule.due_week} of age</p>
+                    </div>
+                    <span class="px-2 py-1 text-xs rounded-full bg-${statusColor}-100 text-${statusColor}-700">
+                        <i class="fas ${statusIcon} mr-1"></i>${schedule.status}
+                    </span>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-2 text-sm mb-3">
+                    <div>
+                        <span class="text-gray-500">Scheduled:</span>
+                        <p class="font-semibold">${schedule.scheduled_date}</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Method:</span>
+                        <p class="font-semibold">${schedule.administration_method || '-'}</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Dosage:</span>
+                        <p class="font-semibold">${schedule.dosage || '-'}</p>
+                    </div>
+                    ${schedule.completed_date ? `
+                    <div>
+                        <span class="text-gray-500">Completed:</span>
+                        <p class="font-semibold text-green-600">${schedule.completed_date}</p>
+                    </div>
+                    ` : ''}
+                </div>
+                
+                ${!isCompleted ? `
+                <div class="flex gap-2 mt-2">
+                    <button onclick="openCompleteModal(${schedule.id}, '${escapeHtml(schedule.vaccine_name)}', '${schedule.administration_method}', '${schedule.dosage}')" 
+                            class="flex-1 bg-green-600 text-white py-2 rounded-xl text-sm">
+                        <i class="fas fa-check-circle mr-1"></i>Mark Complete
+                    </button>
+                    <button onclick="skipVaccination(${schedule.id})" class="flex-1 border border-red-600 text-red-600 py-2 rounded-xl text-sm">
+                        <i class="fas fa-times-circle mr-1"></i>Skip
+                    </button>
+                </div>
+                ` : ''}
+            </div>
+        `;
+    });
+    $('#vaccinationsList').html(html);
+}
+
+function updateStats(schedules) {
+    const total = schedules.length;
+    const completed = schedules.filter(s => s.status === 'COMPLETED').length;
+    const overdue = schedules.filter(s => s.status === 'OVERDUE').length;
+    const pending = schedules.filter(s => s.status === 'PENDING').length;
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    
+    $('#totalScheduled').text(pending);
+    $('#totalCompleted').text(completed);
+    $('#totalOverdue').text(overdue);
+    $('#completionRate').text(completionRate + '%');
+}
+
+// Complete Vaccination Modal
+let currentScheduleId = null;
+
+function openCompleteModal(id, vaccineName, adminMethod, dosage) {
+    currentScheduleId = id;
+    $('#completeScheduleId').val(id);
+    $('#modalVaccineName').text(vaccineName);
+    $('#modalAdminMethod').text(adminMethod || 'Not specified');
+    $('#modalDosage').text(dosage || 'Not specified');
+    $('#administeredDate').val(new Date().toISOString().split('T')[0]);
+    $('#administeredBy').val('');
+    $('#vaccineBatchNumber').val('');
+    $('#quantityUsed').val('0');
+    $('#costPerDose').val('0');
+    $('#reactionNotes').val('');
+    $('#completeNotes').val('');
+    $('#completeModal').removeClass('hidden');
+}
+
+function completeVaccination() {
+    showLoading();
+    
+    const formData = {
+        status: 'COMPLETED',
+        completed_date: $('#administeredDate').val(),
+        administered_by: $('#administeredBy').val(),
+        vaccine_batch_number: $('#vaccineBatchNumber').val(),
+        quantity_used: parseInt($('#quantityUsed').val()) || 0,
+        cost_per_dose: parseFloat($('#costPerDose').val()) || 0,
+        reaction_notes: $('#reactionNotes').val(),
+        notes: $('#completeNotes').val()
+    };
+    
+    fetch(`/api/v1/farms/flock-vaccination-schedules/${currentScheduleId}/complete/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || `HTTP ${response.status}`);
+        return data;
+    })
+    .then(data => {
+        hideLoading();
+        showToast('Vaccination marked as completed!');
+        closeModal('completeModal');
+        loadVaccinations();
+        loadFlockInfo();
+    })
+    .catch(error => {
+        hideLoading();
+        showToast(error.message || 'Error updating status', 'error');
+    });
+}
+
+function skipVaccination(id) {
+    if (confirm('Are you sure you want to skip this vaccination?')) {
+        showLoading();
+        
+        fetch(`/api/v1/farms/flock-vaccination-schedules/${id}/skip/`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: 'SKIPPED' })
+        })
+        .then(async response => {
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || `HTTP ${response.status}`);
+            return data;
+        })
+        .then(data => {
+            hideLoading();
+            showToast('Vaccination skipped');
+            loadVaccinations();
+        })
+        .catch(error => {
+            hideLoading();
+            showToast(error.message || 'Error skipping vaccination', 'error');
+        });
+    }
+}
+
+function regenerateSchedule() {
+    if (confirm('This will regenerate the entire vaccination schedule based on the flock start date. Continue?')) {
+        showLoading();
+        
+        fetch(`/api/v1/farms/flocks/${flockId}/regenerate-vaccination-schedule/`, {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(async response => {
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || `HTTP ${response.status}`);
+            return data;
+        })
+        .then(data => {
+            hideLoading();
+            showToast('Vaccination schedule regenerated successfully!');
+            loadVaccinations();
+        })
+        .catch(error => {
+            hideLoading();
+            showToast(error.message || 'Error regenerating schedule', 'error');
+        });
+    }
+}
+
+// Tab switching
+$('.tab-btn').click(function() {
+    $('.tab-btn').removeClass('active text-primary border-b-2 border-primary').addClass('text-gray-500');
+    $(this).addClass('active text-primary border-b-2 border-primary');
+    currentStatus = $(this).data('status');
+    loadVaccinations();
+});
+
+function closeModal(modalId) {
+    $(`#${modalId}`).addClass('hidden');
+}
+
+function showLoading() {
+    if ($('#loadingOverlay').length) $('#loadingOverlay').removeClass('hidden');
+}
+
+function hideLoading() {
+    if ($('#loadingOverlay').length) $('#loadingOverlay').addClass('hidden');
+}
+
+function showToast(message, type = 'success') {
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+    const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+    const toast = $(`
+        <div class="fixed bottom-20 left-1/2 transform -translate-x-1/2 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in">
+            <i class="fas ${icon} mr-2"></i>${message}
+        </div>
+    `);
+    $('body').append(toast);
+    setTimeout(() => toast.fadeOut(300, () => toast.remove()), 3000);
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Initialize
+$(document).ready(function() {
+    loadFlockInfo();
+    loadVaccinations();
+});
+</script>
+
+<style>
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, 10px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #2E7D32;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}

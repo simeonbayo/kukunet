@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cooperative Dashboard - KUKUNET{% endblock %}
+
+{% block content %}
+<div class="p-4">
+    <!-- Welcome Section -->
+    <div class="bg-gradient-to-r from-green-700 to-green-600 text-white rounded-2xl p-5 mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold">
+                    <i class="fas fa-handshake mr-2"></i>{{ user.organization_name }}
+                </h1>
+                <p class="opacity-90 mt-1">Farmer Cooperative Dashboard</p>
+                <div class="flex items-center gap-2 mt-2">
+                    <span class="bg-white/20 px-2 py-1 rounded-lg text-xs">
+                        <i class="fas fa-users mr-1"></i>Member-Owned
+                    </span>
+                    <span class="bg-white/20 px-2 py-1 rounded-lg text-xs">
+                        <i class="fas fa-calendar mr-1"></i>Est. {{ user.established_year|default:"2024" }}
+                    </span>
+                </div>
+            </div>
+            <div class="bg-white/20 rounded-full p-3">
+                <i class="fas fa-handshake text-3xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cooperative Stats -->
+    <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="card text-center">
+            <i class="fas fa-users text-3xl text-green-600"></i>
+            <p class="text-2xl font-bold mt-2" id="totalMembers">0</p>
+            <p class="text-gray-500 text-sm">Member Farmers</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-chicken text-3xl text-green-600"></i>
+            <p class="text-2xl font-bold mt-2" id="totalBirds">0</p>
+            <p class="text-gray-500 text-sm">Collective Birds</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-egg text-3xl text-green-600"></i>
+            <p class="text-2xl font-bold mt-2" id="dailyEggs">0</p>
+            <p class="text-gray-500 text-sm">Daily Egg Production</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-store text-3xl text-green-600"></i>
+            <p class="text-2xl font-bold mt-2">UGX <span id="collectiveSales">0</span></p>
+            <p class="text-gray-500 text-sm">Collective Sales</p>
+        </div>
+    </div>
+
+    <!-- Cooperative Features -->
+    <div class="grid grid-cols-2 gap-3 mb-6">
+        <button onclick="openMemberRegistration()" class="bg-white p-3 rounded-xl text-center shadow-sm">
+            <i class="fas fa-user-plus text-green-600 text-xl"></i>
+            <p class="text-xs mt-1">Register Member</p>
+        </button>
+        <button onclick="openCollectiveOrder()" class="bg-white p-3 rounded-xl text-center shadow-sm">
+            <i class="fas fa-truck text-green-600 text-xl"></i>
+            <p class="text-xs mt-1">Bulk Order</p>
+        </button>
+        <button onclick="openDividendCalculation()" class="bg-white p-3 rounded-xl text-center shadow-sm">
+            <i class="fas fa-chart-line text-green-600 text-xl"></i>
+            <p class="text-xs mt-1">Dividends</p>
+        </button>
+        <button onclick="openMemberMeeting()" class="bg-white p-3 rounded-xl text-center shadow-sm">
+            <i class="fas fa-calendar-alt text-green-600 text-xl"></i>
+            <p class="text-xs mt-1">Meeting Schedule</p>
+        </button>
+    </div>
+
+    <!-- Member List -->
+    <div class="mb-6">
+        <h2 class="text-lg font-bold mb-3">
+            <i class="fas fa-users text-green-600 mr-2"></i>Cooperative Members
+        </h2>
+        <div id="membersList" class="space-y-2">
+            <!-- Dynamic content -->
+        </div>
+    </div>
+
+    <!-- Collective Sales Chart -->
+    <div>
+        <h2 class="text-lg font-bold mb-3">
+            <i class="fas fa-chart-line text-green-600 mr-2"></i>Collective Sales
+        </h2>
+        <div class="card">
+            <canvas id="salesChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadCooperativeData() {
+    loadMembers();
+    loadSalesData();
+}
+
+function loadMembers() {
+    $.ajax({
+        url: '/api/v1/organization/cooperative/members/',
+        success: function(data) {
+            $('#totalMembers').text(data.total);
+            displayMembers(data.members);
+        }
+    });
+}
+
+function loadSalesData() {
+    $.ajax({
+        url: '/api/v1/organization/cooperative/sales/',
+        success: function(data) {
+            $('#collectiveSales').text(data.total.toLocaleString());
+            createSalesChart(data);
+        }
+    });
+}
+
+function createSalesChart(data) {
+    const ctx = document.getElementById('salesChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.months,
+            datasets: [{
+                label: 'Collective Sales (UGX)',
+                data: data.sales,
+                borderColor: 'rgb(22, 163, 74)',
+                backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        }
+    });
+}
+</script>
+{% endblock %}

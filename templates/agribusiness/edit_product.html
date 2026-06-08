@@ -1,0 +1,415 @@
+<!-- templates/agribusiness/edit_product.html -->
+{% extends 'base_org_admin.html' %}
+{% load static %}
+
+{% block title %}Edit Product - Agribusiness{% endblock %}
+
+{% block page_title %}Edit Product{% endblock %}
+
+{% block breadcrumb %}
+<p class="text-xs text-gray-500 mt-0.5">Update product information</p>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-group input, .form-group select, .form-group textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        font-size: 0.9375rem;
+        transition: all 0.2s;
+    }
+    
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+        outline: none;
+        border-color: #2E7D32;
+        box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+    }
+    
+    .image-preview-container {
+        border: 2px dashed #e2e8f0;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .image-preview-container:hover {
+        border-color: #2E7D32;
+        background: #f8fafc;
+    }
+    
+    .current-image {
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+    
+    .current-image img {
+        max-width: 150px;
+        max-height: 150px;
+        object-fit: cover;
+        border-radius: 0.5rem;
+        margin-bottom: 0.5rem;
+        border: 1px solid #e2e8f0;
+        padding: 4px;
+    }
+    
+    .image-preview {
+        max-width: 150px;
+        max-height: 150px;
+        object-fit: cover;
+        border-radius: 0.5rem;
+        margin: 0 auto;
+    }
+    
+    .btn-submit {
+        background: #2E7D32;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        width: 100%;
+    }
+    
+    .btn-submit:hover {
+        background: #1B5E20;
+    }
+    
+    .btn-submit:disabled {
+        background: #94a3b8;
+        cursor: not-allowed;
+    }
+    
+    .btn-cancel {
+        background: #6b7280;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+    }
+    
+    .btn-cancel:hover {
+        background: #4b5563;
+    }
+    
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid white;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 0.5rem;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    .image-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        justify-content: center;
+        margin-top: 0.5rem;
+    }
+    
+    .remove-image-btn {
+        background: #ef4444;
+        color: white;
+        border: none;
+        padding: 0.25rem 0.75rem;
+        border-radius: 0.375rem;
+        font-size: 0.75rem;
+        cursor: pointer;
+    }
+    
+    .remove-image-btn:hover {
+        background: #dc2626;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <form id="editProductForm" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" id="productId" name="product_id" value="{{ product.id }}">
+            
+            <div class="form-group">
+                <label>Product Name *</label>
+                <input type="text" id="productName" name="name" required value="{{ product.name|default:'' }}">
+            </div>
+            
+            <div class="form-group">
+                <label>Category *</label>
+                <select id="productCategory" name="category" required>
+                    <option value="">Select Category</option>
+                    <option value="DAY_OLD_CHICKS" {% if product.product_type == 'DAY_OLD_CHICKS' %}selected{% endif %}>Day Old Chicks</option>
+                    <option value="FEED" {% if product.product_type == 'FEED' %}selected{% endif %}>Feed</option>
+                    <option value="MEDICINE" {% if product.product_type == 'MEDICINE' %}selected{% endif %}>Medicine</option>
+                    <option value="EQUIPMENT" {% if product.product_type == 'EQUIPMENT' %}selected{% endif %}>Equipment</option>
+                    <option value="EGGS" {% if product.product_type == 'EGGS' %}selected{% endif %}>Eggs</option>
+                    <option value="MEAT" {% if product.product_type == 'MEAT' %}selected{% endif %}>Meat</option>
+                    <option value="OTHER" {% if product.product_type == 'OTHER' %}selected{% endif %}>Other</option>
+                </select>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="form-group">
+                    <label>Price (UGX) *</label>
+                    <input type="number" id="productPrice" name="price" required value="{{ product.price|default:'0' }}" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label>Stock Quantity *</label>
+                    <input type="number" id="productStock" name="stock_quantity" required value="{{ product.stock_quantity|default:'0' }}">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Current Image</label>
+                <div id="currentImageContainer" class="current-image">
+                    {% if product.main_image %}
+                        <img id="currentImage" src="{{ product.main_image }}" alt="{{ product.name }}">
+                        <div class="image-actions">
+                            <button type="button" id="removeImageBtn" class="remove-image-btn">
+                                <i class="fas fa-trash mr-1"></i> Remove Image
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">Current product image (will be replaced if you upload a new one)</p>
+                    {% else %}
+                        <p class="text-gray-500 text-sm">No image uploaded</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Change Image (Optional)</label>
+                <div id="imagePreviewContainer" class="image-preview-container" onclick="document.getElementById('productImage').click()">
+                    <input type="file" id="productImage" name="image" accept="image/*" class="hidden" onchange="previewImage(this)">
+                    <div id="imagePreviewArea">
+                        <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-2"></i>
+                        <p class="text-gray-500 text-sm">Click to upload new product image</p>
+                        <p class="text-gray-400 text-xs mt-1">PNG, JPG, JPEG up to 5MB</p>
+                    </div>
+                    <img id="imagePreview" class="image-preview hidden" alt="Preview">
+                    <button type="button" id="cancelImageBtn" class="remove-image-btn mt-2" style="display: none;" onclick="cancelImageUpload()">
+                        Cancel Upload
+                    </button>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Description</label>
+                <textarea id="productDescription" name="description" rows="4" placeholder="Product description...">{{ product.description|default:'' }}</textarea>
+            </div>
+            
+            <div class="flex gap-3">
+                <a href="{% url 'frontend:agribusiness_products' %}" class="btn-cancel flex-1 text-center">Cancel</a>
+                <button type="submit" id="submitBtn" class="btn-submit flex-1">Update Product</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Get the product ID from the hidden input
+    const productId = document.getElementById('productId').value;
+    
+    function previewImage(input) {
+        const preview = document.getElementById('imagePreview');
+        const previewArea = document.getElementById('imagePreviewArea');
+        const cancelBtn = document.getElementById('cancelImageBtn');
+        
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.classList.remove('hidden');
+                previewArea.classList.add('hidden');
+                cancelBtn.style.display = 'inline-block';
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+    
+    function cancelImageUpload() {
+        const preview = document.getElementById('imagePreview');
+        const previewArea = document.getElementById('imagePreviewArea');
+        const cancelBtn = document.getElementById('cancelImageBtn');
+        const fileInput = document.getElementById('productImage');
+        
+        preview.src = '';
+        preview.classList.add('hidden');
+        previewArea.classList.remove('hidden');
+        cancelBtn.style.display = 'none';
+        fileInput.value = '';
+    }
+    
+    // Toast function that doesn't cause recursion
+    function showToastMessage(message, type) {
+        const toast = document.getElementById('toast');
+        if (toast) {
+            // Use the global toast function if available
+            if (window.showToast) {
+                window.showToast(message, type);
+            } else {
+                alert(message);
+            }
+        } else {
+            alert(message);
+        }
+    }
+    
+    $(document).ready(function() {
+        console.log('Product ID:', productId);
+        console.log('API URL:', `/api/v1/agribusiness/${productId}/update/`);
+        
+        $('#removeImageBtn').on('click', function() {
+            if (confirm('Are you sure you want to remove the current image? The product will have no image.')) {
+                $('#currentImageContainer').hide();
+                // Add hidden input to indicate image removal
+                $('<input>').attr({
+                    type: 'hidden',
+                    name: 'remove_image',
+                    value: 'true'
+                }).appendTo('#editProductForm');
+                showToastMessage('Image will be removed when you save', 'info');
+            }
+        });
+        
+        $('#editProductForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            // Collect form data
+            let formData = new FormData();
+            formData.append('name', $('#productName').val().trim());
+            formData.append('category', $('#productCategory').val());
+            formData.append('price', parseFloat($('#productPrice').val()));
+            formData.append('stock_quantity', parseInt($('#productStock').val()));
+            formData.append('description', $('#productDescription').val().trim());
+            
+            const imageFile = $('#productImage')[0].files[0];
+            if (imageFile) {
+                formData.append('image', imageFile);
+                console.log('Image file selected:', imageFile.name, imageFile.size);
+            }
+            
+            // Check if remove image was requested
+            if ($('input[name="remove_image"]').length) {
+                formData.append('remove_image', 'true');
+                console.log('Remove image flag set');
+            }
+            
+            // Validation
+            if (!formData.get('name')) {
+                showToastMessage('Product name is required', 'error');
+                $('#productName').focus();
+                return;
+            }
+            
+            if (!formData.get('category')) {
+                showToastMessage('Category is required', 'error');
+                $('#productCategory').focus();
+                return;
+            }
+            
+            if (formData.get('price') <= 0) {
+                showToastMessage('Valid price is required', 'error');
+                $('#productPrice').focus();
+                return;
+            }
+            
+            let $btn = $('#submitBtn');
+            $btn.prop('disabled', true).html('<div class="loading-spinner"></div> Updating...');
+            
+            // Make the API call
+            $.ajax({
+                url: `/api/v1/agribusiness/${productId}/update/`,
+                method: 'PUT',
+                headers: { 
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                data: formData,
+                processData: false,
+                contentType: false,
+                timeout: 30000,
+                success: function(response) {
+                    console.log('Update success:', response);
+                    showToastMessage(response.message || 'Product updated successfully!', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/agribusiness/products/';
+                    }, 1500);
+                },
+                error: function(xhr, status, error) {
+                    console.error('Update error details:', {
+                        status: status,
+                        error: error,
+                        response: xhr.responseText,
+                        statusCode: xhr.status
+                    });
+                    
+                    let errorMsg = 'Failed to update product';
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        errorMsg = xhr.responseJSON.error;
+                    } else if (xhr.status === 404) {
+                        errorMsg = 'API endpoint not found. Please check the URL.';
+                    } else if (xhr.status === 403) {
+                        errorMsg = 'Permission denied. Please login again.';
+                    } else if (xhr.status === 0) {
+                        errorMsg = 'Network error. Please check your connection.';
+                    }
+                    
+                    showToastMessage(errorMsg, 'error');
+                    $btn.prop('disabled', false).html('Update Product');
+                }
+            });
+        });
+    });
+    
+    function getCookie(name) {
+        let value = null;
+        if (document.cookie) {
+            let cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    value = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return value;
+    }
+</script>
+{% endblock %}

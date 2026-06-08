@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Government Dashboard - KUKUNET{% endblock %}
+
+{% block content %}
+<div class="p-4">
+    <!-- Welcome Section -->
+    <div class="bg-gradient-to-r from-red-700 to-red-600 text-white rounded-2xl p-5 mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold">
+                    <i class="fas fa-landmark mr-2"></i>{{ user.organization_name }}
+                </h1>
+                <p class="opacity-90 mt-1">Government Agency Dashboard</p>
+            </div>
+            <div class="bg-white/20 rounded-full p-3">
+                <i class="fas fa-chart-simple text-3xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Regional Stats -->
+    <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="card text-center">
+            <i class="fas fa-map-marker-alt text-3xl text-red-600"></i>
+            <p class="text-2xl font-bold mt-2" id="districts">0</p>
+            <p class="text-gray-500 text-sm">Districts Covered</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-chicken text-3xl text-red-600"></i>
+            <p class="text-2xl font-bold mt-2" id="totalPoultry">0</p>
+            <p class="text-gray-500 text-sm">Total Poultry Population</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-chart-line text-3xl text-red-600"></i>
+            <p class="text-2xl font-bold mt-2" id="productionRate">0%</p>
+            <p class="text-gray-500 text-sm">Production Growth</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-file-alt text-3xl text-red-600"></i>
+            <p class="text-2xl font-bold mt-2" id="compliance">0%</p>
+            <p class="text-gray-500 text-sm">Compliance Rate</p>
+        </div>
+    </div>
+
+    <!-- Government Actions -->
+    <div class="grid grid-cols-4 gap-3 mb-6">
+        <button onclick="openPolicy()" class="bg-white p-3 rounded-xl text-center shadow-sm">
+            <i class="fas fa-file-pdf text-red-600 text-xl"></i>
+            <p class="text-xs mt-1">Policy Updates</p>
+        </button>
+        <button onclick="openCompliance()" class="bg-white p-3 rounded-xl text-center shadow-sm">
+            <i class="fas fa-clipboard-check text-red-600 text-xl"></i>
+            <p class="text-xs mt-1">Compliance Check</p>
+        </button>
+        <button onclick="openSubsidies()" class="bg-white p-3 rounded-xl text-center shadow-sm">
+            <i class="fas fa-hand-holding-usd text-red-600 text-xl"></i>
+            <p class="text-xs mt-1">Subsidies</p>
+        </button>
+        <button onclick="openReport()" class="bg-white p-3 rounded-xl text-center shadow-sm">
+            <i class="fas fa-chart-bar text-red-600 text-xl"></i>
+            <p class="text-xs mt-1">Reports</p>
+        </button>
+    </div>
+
+    <!-- Regional Map -->
+    <div class="mb-6">
+        <h2 class="text-lg font-bold mb-3">Regional Distribution</h2>
+        <div class="card">
+            <canvas id="regionChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Compliance Alerts -->
+    <div>
+        <h2 class="text-lg font-bold mb-3">Compliance Alerts</h2>
+        <div id="alertsList" class="space-y-2"></div>
+    </div>
+</div>
+{% endblock %}

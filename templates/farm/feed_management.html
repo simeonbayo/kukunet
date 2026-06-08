@@ -1,0 +1,1198 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Feed Management - KUKUNET{% endblock %}
+
+{% block content %}
+<div class="p-4">
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-2">
+        <a href="/farm/flock/{{ flock_id }}/dashboard/" class="text-primary hover:text-primary-dark">
+            <i class="fas fa-arrow-left text-xl"></i>
+        </a>
+        <h1 class="text-2xl font-bold text-gray-800">
+            <i class="fas fa-seedling text-primary mr-2"></i>Feed Management
+        </h1>
+    </div>
+    <p class="text-sm text-gray-500 mb-4" id="flockName">Loading flock...</p>
+
+    <!-- Action Buttons -->
+    <div class="flex gap-3 mb-6">
+        <button onclick="openAddConsumptionModal()" class="bg-green-600 text-white px-4 py-2 rounded-xl text-sm font-medium">
+            <i class="fas fa-plus mr-1"></i>Record Consumption
+        </button>
+        <button onclick="openPurchaseModal()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-medium">
+            <i class="fas fa-shopping-cart mr-1"></i>Purchase Feed
+        </button>
+    </div>
+
+    <!-- FCR Stats -->
+    <div class="grid grid-cols-2 gap-3 mb-6">
+        <div class="card text-center p-3">
+            <i class="fas fa-chicken text-primary text-xl"></i>
+            <p class="text-2xl font-bold mt-1" id="totalFeedConsumed">0</p>
+            <p class="text-xs text-gray-500">Total Feed (kg)</p>
+        </div>
+        <div class="card text-center p-3">
+            <i class="fas fa-chart-line text-primary text-xl"></i>
+            <p class="text-2xl font-bold mt-1" id="fcrValue">0</p>
+            <p class="text-xs text-gray-500">Feed Conversion Ratio</p>
+        </div>
+        <div class="card text-center p-3">
+            <i class="fas fa-dollar-sign text-primary text-xl"></i>
+            <p class="text-2xl font-bold mt-1" id="totalFeedCost">UGX 0</p>
+            <p class="text-xs text-gray-500">Total Feed Cost</p>
+        </div>
+        <div class="card text-center p-3">
+            <i class="fas fa-tachometer-alt text-primary text-xl"></i>
+            <p class="text-2xl font-bold mt-1" id="feedEfficiency">0%</p>
+            <p class="text-xs text-gray-500">Feed Efficiency</p>
+        </div>
+    </div>
+
+    <!-- Feeding Guide Card -->
+    <div class="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-4 mb-6">
+        <div class="flex justify-between items-start mb-3">
+            <div>
+                <h3 class="font-bold text-gray-800">
+                    <i class="fas fa-book-open text-primary mr-2"></i>Feeding Guide
+                </h3>
+                <p class="text-xs text-gray-500 mt-1">Based on current flock size and age</p>
+            </div>
+            <div class="text-right">
+                <p class="text-xs text-gray-500">Current Flock Size</p>
+                <p class="text-lg font-bold text-primary" id="currentBirdCount">0</p>
+            </div>
+        </div>
+        <div id="feedingGuide" class="space-y-3">
+            <div class="text-center py-4">
+                <div class="spinner-small mx-auto"></div>
+                <p class="text-gray-500 text-sm mt-2">Loading feeding guide...</p>
+            </div>
+        </div>
+        <div id="dailyRequirement" class="mt-3 pt-3 border-t border-yellow-200 hidden">
+            <div class="grid grid-cols-2 gap-3 text-center">
+                <div class="bg-white rounded-lg p-2">
+                    <p class="text-xs text-gray-500">Daily Feed Required</p>
+                    <p class="text-xl font-bold text-primary" id="dailyFeedRequired">0 kg</p>
+                </div>
+                <div class="bg-white rounded-lg p-2">
+                    <p class="text-xs text-gray-500">Weekly Feed Required</p>
+                    <p class="text-xl font-bold text-primary" id="weeklyFeedRequired">0 kg</p>
+                </div>
+                <div class="bg-white rounded-lg p-2">
+                    <p class="text-xs text-gray-500">Monthly Feed Required</p>
+                    <p class="text-xl font-bold text-primary" id="monthlyFeedRequired">0 kg</p>
+                </div>
+                <div class="bg-white rounded-lg p-2">
+                    <p class="text-xs text-gray-500">Cost Per Day (Est.)</p>
+                    <p class="text-xl font-bold text-primary" id="dailyCostEstimate">UGX 0</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="flex space-x-2 mb-4 border-b">
+        <button class="tab-btn active px-4 py-2 text-primary border-b-2 border-primary" data-tab="consumption">
+            <i class="fas fa-chart-line mr-1"></i>Consumption Records
+        </button>
+        <button class="tab-btn px-4 py-2 text-gray-500" data-tab="inventory">
+            <i class="fas fa-boxes mr-1"></i>Inventory
+        </button>
+        <button class="tab-btn px-4 py-2 text-gray-500" data-tab="alerts">
+            <i class="fas fa-bell mr-1"></i>Alerts
+        </button>
+    </div>
+
+    <!-- Consumption Records Tab -->
+    <div id="consumption-tab" class="tab-content">
+        <div id="consumptionList" class="space-y-3">
+            <div class="text-center py-8">
+                <div class="spinner mx-auto"></div>
+                <p class="text-gray-500 mt-2">Loading consumption records...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Tab -->
+    <div id="inventory-tab" class="tab-content hidden">
+        <div id="inventoryList" class="space-y-3">
+            <div class="text-center py-8">
+                <div class="spinner mx-auto"></div>
+                <p class="text-gray-500 mt-2">Loading inventory...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts Tab -->
+    <div id="alerts-tab" class="tab-content hidden">
+        <div id="feedAlertsList" class="space-y-3">
+            <div class="text-center py-8">
+                <div class="spinner mx-auto"></div>
+                <p class="text-gray-500 mt-2">Loading alerts...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Consumption Modal -->
+<div id="addConsumptionModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-screen overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">
+                    <i class="fas fa-plus-circle text-primary mr-2"></i>Record Feed Consumption
+                </h2>
+                <button onclick="closeModal('addConsumptionModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="addConsumptionForm">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Date</label>
+                    <input type="date" id="consumeDate" class="form-input" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Feeding Time</label>
+                    <select id="feedingTime" class="form-input" required>
+                        <option value="MORNING">🌅 Morning (6:00 - 10:00)</option>
+                        <option value="AFTERNOON">☀️ Afternoon (12:00 - 15:00)</option>
+                        <option value="EVENING">🌙 Evening (17:00 - 20:00)</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Feed Type</label>
+                    <select id="feedType" class="form-input" required>
+                        <option value="">Select Feed Type</option>
+                    </select>
+                </div>
+                <div class="mb-4 p-3 bg-blue-50 rounded-lg">
+                    <label class="block text-sm font-bold mb-2 text-blue-600">Current Feed Stock (kg)</label>
+                    <input type="number" step="0.1" id="currentStock" class="form-input" readonly style="background-color: #e0e7ff;" value="0">
+                    <p class="text-xs text-gray-500 mt-1">Current available stock for this feed type (auto-loaded)</p>
+                </div>
+                <div class="mb-4 p-3 bg-green-50 rounded-lg">
+                    <label class="block text-sm font-bold mb-2 text-green-600">Amount of Feed Given (kg)</label>
+                    <input type="number" step="0.1" id="feedGiven" class="form-input" value="0" required>
+                    <p class="text-xs text-gray-500 mt-1">The amount of feed consumed by the birds</p>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Notes</label>
+                    <textarea id="consumeNotes" rows="2" class="form-input" placeholder="Additional notes..."></textarea>
+                </div>
+                <div id="consumptionWarning" class="mb-4 p-3 rounded-lg hidden">
+                    <p class="text-sm" id="warningMessage"></p>
+                </div>
+                <button type="submit" class="btn-primary w-full">
+                    <i class="fas fa-save mr-2"></i>Save Record
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Purchase Feed Modal -->
+<div id="purchaseModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-screen overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">
+                    <i class="fas fa-shopping-cart text-primary mr-2"></i>Purchase Feed
+                </h2>
+                <button onclick="closeModal('purchaseModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="purchaseForm">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Feed Type</label>
+                    <select id="purchaseFeedType" class="form-input" required>
+                        <option value="">Select Feed Type</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Quantity (kg)</label>
+                    <input type="number" step="0.1" id="quantityKg" class="form-input" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Cost per KG (UGX)</label>
+                    <input type="number" step="0.01" id="costPerKgPurchase" class="form-input" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Supplier Name</label>
+                    <input type="text" id="supplierName" class="form-input" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Invoice Number</label>
+                    <input type="text" id="invoiceNumber" class="form-input" placeholder="Optional">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Delivery Date</label>
+                    <input type="date" id="deliveryDate" class="form-input">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Payment Status</label>
+                    <select id="paymentStatus" class="form-input">
+                        <option value="PAID">Paid</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="PARTIAL">Partial</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Notes</label>
+                    <textarea id="purchaseNotes" rows="2" class="form-input" placeholder="Additional notes..."></textarea>
+                </div>
+                <button type="submit" class="btn-primary w-full">
+                    <i class="fas fa-save mr-2"></i>Record Purchase
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Consumption Modal -->
+<div id="editConsumptionModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-screen overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">
+                    <i class="fas fa-edit text-primary mr-2"></i>Edit Feed Consumption
+                </h2>
+                <button onclick="closeModal('editConsumptionModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="editConsumptionForm">
+                {% csrf_token %}
+                <input type="hidden" id="editConsumptionId">
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Date</label>
+                    <input type="date" id="editConsumeDate" class="form-input" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Feeding Time</label>
+                    <select id="editFeedingTime" class="form-input" required>
+                        <option value="MORNING">🌅 Morning (6:00 - 10:00)</option>
+                        <option value="AFTERNOON">☀️ Afternoon (12:00 - 15:00)</option>
+                        <option value="EVENING">🌙 Evening (17:00 - 20:00)</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Feed Type</label>
+                    <select id="editFeedType" class="form-input" required>
+                        <option value="">Select Feed Type</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Feed Given (kg)</label>
+                    <input type="number" step="0.1" id="editFeedGiven" class="form-input" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Notes</label>
+                    <textarea id="editConsumeNotes" rows="2" class="form-input" placeholder="Additional notes..."></textarea>
+                </div>
+                <div class="flex gap-3">
+                    <button type="button" onclick="deleteConsumptionRecord()" class="flex-1 bg-red-600 text-white py-2 rounded-xl text-sm font-medium">
+                        <i class="fas fa-trash mr-1"></i>Delete
+                    </button>
+                    <button type="submit" class="flex-1 btn-primary">
+                        <i class="fas fa-save mr-2"></i>Update
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg p-4 flex items-center gap-3">
+        <div class="spinner-small"></div>
+        <span class="text-gray-700">Processing...</span>
+    </div>
+</div>
+
+<script>
+const flockId = {{ flock_id }};
+let currentTab = 'consumption';
+let currentBirdCount = 0;
+let currentFeedGuide = null;
+let totalPurchaseCost = 0;
+let currentStockValue = 0;
+
+// Get CSRF token
+function getCSRFToken() {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === ('csrftoken' + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Tab switching
+$('.tab-btn').click(function() {
+    const tab = $(this).data('tab');
+    currentTab = tab;
+    
+    $('.tab-btn').removeClass('active text-primary border-b-2 border-primary').addClass('text-gray-500');
+    $(this).addClass('active text-primary border-b-2 border-primary');
+    
+    $('.tab-content').addClass('hidden');
+    $(`#${tab}-tab`).removeClass('hidden');
+    
+    if (tab === 'consumption') loadConsumption();
+    else if (tab === 'inventory') loadInventory();
+    else if (tab === 'alerts') loadFeedAlerts();
+});
+
+// Load flock info and feeding guide
+function loadFlockInfo() {
+    fetch(`/api/v1/farms/flocks/${flockId}/`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(flock => {
+        $('#flockName').text(`${flock.batch_name} - Feed Management (${flock.bird_type})`);
+        currentBirdCount = flock.current_quantity;
+        $('#currentBirdCount').text(currentBirdCount);
+        loadFeedingGuide(flock.bird_type, flock.age_weeks, flock.current_quantity);
+        loadAllData();
+    })
+    .catch(error => console.error('Error loading flock info:', error));
+}
+
+function loadAllData() {
+    loadFeedSummary();
+    loadPurchaseCost();
+    loadConsumption();
+    loadInventory();
+    loadFeedAlerts();
+}
+
+function loadFeedingGuide(birdType, currentWeek, birdCount) {
+    fetch(`/api/v1/farms/feeding-guides/?bird_type=${birdType}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(guides => {
+        if (guides && guides.length > 0) {
+            let html = '<div class="space-y-2">';
+            let currentGuide = null;
+            
+            guides.forEach(guide => {
+                const isCurrent = currentWeek >= guide.week_start && currentWeek <= guide.week_end;
+                const bgClass = isCurrent ? 'bg-green-100 border-green-500' : 'bg-white';
+                
+                const dailyForFlock = (guide.daily_feed_per_bird_grams * birdCount) / 1000;
+                const weeklyForFlock = dailyForFlock * 7;
+                
+                if (isCurrent) {
+                    currentGuide = guide;
+                    currentFeedGuide = guide;
+                    $('#dailyFeedRequired').text(dailyForFlock.toFixed(1) + ' kg');
+                    $('#weeklyFeedRequired').text(weeklyForFlock.toFixed(1) + ' kg');
+                    $('#monthlyFeedRequired').text((dailyForFlock * 30).toFixed(1) + ' kg');
+                    
+                    fetch(`/api/v1/farms/feed-inventory/?feed_type=${guide.feed_type}`, {
+                        method: 'GET',
+                        credentials: 'include',
+                        headers: {
+                            'X-CSRFToken': getCSRFToken(),
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(inventory => {
+                        if (inventory && inventory.length > 0) {
+                            const avgCost = inventory[0].average_cost_per_kg || 3000;
+                            const dailyCost = dailyForFlock * avgCost;
+                            $('#dailyCostEstimate').text(`UGX ${Math.round(dailyCost).toLocaleString()}`);
+                        } else {
+                            $('#dailyCostEstimate').text('UGX 0');
+                        }
+                    });
+                    
+                    $('#dailyRequirement').removeClass('hidden');
+                }
+                
+                html += `
+                    <div class="${bgClass} rounded-lg p-3 border-l-4 border-primary">
+                        <div class="flex justify-between items-center">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2">
+                                    <p class="font-semibold">Week ${guide.week_start}-${guide.week_end}</p>
+                                    ${isCurrent ? '<span class="px-2 py-0.5 bg-green-500 text-white text-xs rounded-full">Current Week</span>' : ''}
+                                </div>
+                                <p class="text-sm text-gray-600">${guide.feed_type_name}</p>
+                                <p class="text-sm text-primary font-medium">${guide.daily_feed_per_bird_grams}g per bird/day</p>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    For ${birdCount} birds: <strong class="text-primary">${dailyForFlock.toFixed(1)} kg/day</strong>
+                                    <span class="mx-2">|</span>
+                                    ${weeklyForFlock.toFixed(1)} kg/week
+                                </div>
+                                ${guide.expected_weight_kg ? `<p class="text-xs text-gray-500 mt-1">Expected weight: ${guide.expected_weight_kg} kg</p>` : ''}
+                                ${guide.expected_egg_production ? `<p class="text-xs text-gray-500">Expected eggs: ${guide.expected_egg_production} per 100 birds/day</p>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            $('#feedingGuide').html(html);
+        } else {
+            $('#feedingGuide').html('<p class="text-gray-500 text-center">No feeding guide available for this bird type</p>');
+        }
+    })
+    .catch(error => console.error('Error loading feeding guide:', error));
+}
+
+// Load current stock when feed type changes
+$('#feedType').on('change', function() {
+    const feedTypeId = $(this).val();
+    if (feedTypeId) {
+        fetch(`/api/v1/farms/feed-inventory/?feed_type=${feedTypeId}`, {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(inventory => {
+            if (inventory && inventory.length > 0) {
+                currentStockValue = inventory[0].current_stock_kg;
+                $('#currentStock').val(currentStockValue);
+                validateConsumption();
+            } else {
+                currentStockValue = 0;
+                $('#currentStock').val(0);
+                validateConsumption();
+            }
+        })
+        .catch(error => console.error('Error loading stock:', error));
+    } else {
+        currentStockValue = 0;
+        $('#currentStock').val(0);
+        validateConsumption();
+    }
+});
+
+// Validate consumption when feed given changes
+$('#feedGiven').on('input', function() {
+    validateConsumption();
+});
+
+function validateConsumption() {
+    const feedGiven = parseFloat($('#feedGiven').val()) || 0;
+    const currentStock = parseFloat($('#currentStock').val()) || 0;
+    const warningDiv = $('#consumptionWarning');
+    const warningMsg = $('#warningMessage');
+    
+    if (feedGiven > currentStock) {
+        warningDiv.removeClass('hidden').addClass('bg-red-100 border border-red-400');
+        warningMsg.html(`<i class="fas fa-exclamation-triangle text-red-500 mr-2"></i>Warning: Feed given (${feedGiven.toFixed(1)} kg) exceeds current stock (${currentStock.toFixed(1)} kg)!`);
+        warningMsg.css('color', '#dc2626');
+    } else if (feedGiven === 0) {
+        warningDiv.removeClass('hidden').addClass('bg-yellow-100 border border-yellow-400');
+        warningMsg.html(`<i class="fas fa-info-circle text-yellow-500 mr-2"></i>Warning: Feed given is 0 kg. No feed was consumed.`);
+        warningMsg.css('color', '#d97706');
+    } else if (feedGiven > 0 && feedGiven <= currentStock) {
+        warningDiv.removeClass('hidden').addClass('bg-green-100 border border-green-400');
+        warningMsg.html(`<i class="fas fa-check-circle text-green-500 mr-2"></i>Valid: ${feedGiven.toFixed(1)} kg will be deducted from stock. Remaining stock will be ${(currentStock - feedGiven).toFixed(1)} kg.`);
+        warningMsg.css('color', '#059669');
+    } else {
+        warningDiv.addClass('hidden');
+    }
+}
+
+function loadPurchaseCost() {
+    console.log('Loading purchase cost for flock:', flockId);
+    fetch(`/api/v1/farms/feed-purchase-summary/?batch=${flockId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Purchase summary response:', data);
+        if (data && data.total_purchase_cost !== undefined && data.total_purchase_cost !== null) {
+            totalPurchaseCost = data.total_purchase_cost;
+            const formattedCost = `UGX ${Math.round(totalPurchaseCost).toLocaleString()}`;
+            $('#totalFeedCost').text(formattedCost);
+            console.log('Total feed cost set to:', formattedCost);
+            console.log('Based on', data.purchase_count || 0, 'purchase records');
+        } else {
+            console.error('No valid purchase cost data received');
+            $('#totalFeedCost').text('UGX 0');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading purchase cost:', error);
+        $('#totalFeedCost').text('UGX 0');
+    });
+}
+
+function loadFeedSummary() {
+    fetch(`/api/v1/farms/feed-summary/?batch=${flockId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Feed summary data:', data);
+        if (data) {
+            $('#totalFeedConsumed').text(data.total_feed_consumed_kg?.toFixed(1) || '0');
+            $('#fcrValue').text(data.feed_conversion_ratio_fcr?.toFixed(2) || '0');
+            
+            const efficiency = data.feed_conversion_ratio_fcr > 0 ? (1 / data.feed_conversion_ratio_fcr * 100) : 0;
+            $('#feedEfficiency').text(efficiency.toFixed(1) + '%');
+        }
+    })
+    .catch(error => {
+        console.error('Error loading feed summary:', error);
+    });
+}
+
+// Load consumption records
+function loadConsumption() {
+    fetch(`/api/v1/farms/feed-consumption/?batch=${flockId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(records => {
+        if (records && Array.isArray(records)) {
+            displayConsumption(records);
+        } else {
+            displayConsumption([]);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading consumption:', error);
+        $('#consumptionList').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-2"></i>
+                <p class="text-gray-500">Error loading consumption records</p>
+                <button onclick="loadConsumption()" class="btn-primary mt-3 text-sm py-2 px-4">
+                    <i class="fas fa-sync-alt mr-1"></i>Retry
+                </button>
+            </div>
+        `);
+    });
+}
+
+function displayConsumption(records) {
+    if (!records || records.length === 0) {
+        $('#consumptionList').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-chart-line text-4xl text-gray-300 mb-2"></i>
+                <p class="text-gray-500">No consumption records yet</p>
+                <button onclick="openAddConsumptionModal()" class="btn-primary mt-3 text-sm py-2 px-4">
+                    <i class="fas fa-plus mr-1"></i>Add First Record
+                </button>
+            </div>
+        `);
+        return;
+    }
+    
+    // Filter out records with negative consumption
+    const validRecords = records.filter(r => r.feed_amount_kg >= 0);
+    const invalidRecords = records.filter(r => r.feed_amount_kg < 0);
+    
+    if (invalidRecords.length > 0) {
+        console.warn('Found invalid records (negative consumption):', invalidRecords);
+    }
+    
+    // Group records by date
+    const grouped = {};
+    validRecords.forEach(record => {
+        if (!grouped[record.date]) {
+            grouped[record.date] = [];
+        }
+        grouped[record.date].push(record);
+    });
+    
+    if (Object.keys(grouped).length === 0) {
+        $('#consumptionList').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-exclamation-triangle text-4xl text-yellow-500 mb-2"></i>
+                <p class="text-gray-500">Only invalid records found</p>
+                <p class="text-xs text-gray-400 mt-1">Please delete invalid records and add correct ones</p>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = '';
+    for (const [date, dayRecords] of Object.entries(grouped)) {
+        const totalForDay = dayRecords.reduce((sum, r) => sum + r.feed_amount_kg, 0);
+        html += `
+            <div class="card mb-3">
+                <div class="flex justify-between items-center p-3 border-b bg-gray-50 rounded-t-lg">
+                    <p class="font-semibold text-gray-800">${date}</p>
+                    <span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full font-semibold">Total Consumed: ${totalForDay.toFixed(1)} kg</span>
+                </div>
+                <div class="p-3 space-y-3">
+        `;
+        
+        dayRecords.forEach(record => {
+            const timeIcon = record.feeding_time === 'MORNING' ? '🌅' : (record.feeding_time === 'AFTERNOON' ? '☀️' : '🌙');
+            const timeName = record.feeding_time === 'MORNING' ? 'Morning' : (record.feeding_time === 'AFTERNOON' ? 'Afternoon' : 'Evening');
+            html += `
+                <div class="border-b pb-3 last:border-b-0 last:pb-0">
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <p class="font-medium text-gray-800">${timeIcon} ${timeName} Feeding</p>
+                            <p class="text-xs text-gray-500">${record.feed_type_name}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <span class="text-base font-bold text-green-600">${record.feed_amount_kg.toFixed(1)} kg consumed</span>
+                            <button onclick="openEditConsumptionModal(${record.id})" class="text-blue-500 hover:text-blue-700">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-600">
+                        <div><span class="text-gray-400">Feed Given:</span> ${record.feed_given_kg} kg</div>
+                    </div>
+                    ${record.notes ? `<p class="text-xs text-gray-500 mt-2">${record.notes}</p>` : ''}
+                </div>
+            `;
+        });
+        
+        html += `</div></div>`;
+    }
+    $('#consumptionList').html(html);
+}
+
+// Load inventory
+function loadInventory() {
+    fetch(`/api/v1/farms/feed-inventory/`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(inventory => {
+        if (inventory && Array.isArray(inventory)) {
+            displayInventory(inventory);
+        } else {
+            displayInventory([]);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading inventory:', error);
+        $('#inventoryList').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-2"></i>
+                <p class="text-gray-500">Error loading inventory</p>
+            </div>
+        `);
+    });
+}
+
+function displayInventory(inventory) {
+    if (!inventory || inventory.length === 0) {
+        $('#inventoryList').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-boxes text-4xl text-gray-300 mb-2"></i>
+                <p class="text-gray-500">No feed inventory found</p>
+                <button onclick="openPurchaseModal()" class="btn-primary mt-3 text-sm py-2 px-4">
+                    <i class="fas fa-shopping-cart mr-1"></i>Purchase Feed
+                </button>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = '';
+    inventory.forEach(item => {
+        const stockPercent = (item.current_stock_kg / item.reorder_level_kg) * 100;
+        const stockColor = stockPercent <= 20 ? 'red' : (stockPercent <= 50 ? 'yellow' : 'green');
+        
+        html += `
+            <div class="card ${item.is_low_stock ? 'border-l-4 border-red-500' : ''}">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h3 class="font-bold text-gray-800">${item.feed_type_name}</h3>
+                        <p class="text-sm text-gray-500">Batch: ${item.batch_number || 'N/A'}</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-2xl font-bold ${item.is_low_stock ? 'text-red-600' : `text-${stockColor}-600`}">${item.current_stock_kg}</span>
+                        <span class="text-xs text-gray-500">kg</span>
+                    </div>
+                </div>
+                <div class="mb-2">
+                    <div class="bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div class="bg-${stockColor}-500 h-2 rounded-full" style="width: ${Math.min(stockPercent, 100)}%"></div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                    <div><span class="text-gray-500">Min Stock:</span> ${item.minimum_stock_kg} kg</div>
+                    <div><span class="text-gray-500">Reorder Level:</span> ${item.reorder_level_kg} kg</div>
+                    <div><span class="text-gray-500">Avg Cost:</span> UGX ${Math.round(item.average_cost_per_kg).toLocaleString()}</div>
+                    <div><span class="text-gray-500">Supplier:</span> ${item.supplier_name || '-'}</div>
+                </div>
+                ${item.is_low_stock ? '<p class="text-sm text-red-600 mt-3"><i class="fas fa-exclamation-triangle mr-1"></i>Low stock! Please reorder.</p>' : ''}
+            </div>
+        `;
+    });
+    $('#inventoryList').html(html);
+}
+
+// Load feed alerts
+function loadFeedAlerts() {
+    fetch(`/api/v1/farms/feed-alerts/?batch=${flockId}&is_resolved=false`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(alerts => {
+        if (alerts && Array.isArray(alerts)) {
+            displayFeedAlerts(alerts);
+        } else {
+            displayFeedAlerts([]);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading alerts:', error);
+        $('#feedAlertsList').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-2"></i>
+                <p class="text-gray-500">Error loading alerts</p>
+            </div>
+        `);
+    });
+}
+
+function displayFeedAlerts(alerts) {
+    if (!alerts || alerts.length === 0) {
+        $('#feedAlertsList').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-check-circle text-green-500 text-4xl mb-2"></i>
+                <p class="text-gray-500">No active feed alerts</p>
+                <p class="text-xs text-gray-400 mt-1">Feed consumption is on track</p>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = '';
+    alerts.forEach(alert => {
+        const severityColor = alert.severity === 'CRITICAL' ? 'red' :
+                             (alert.severity === 'WARNING' ? 'orange' : 'blue');
+        html += `
+            <div class="card border-l-4 border-${severityColor}-500">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <h3 class="font-bold text-gray-800">${alert.title}</h3>
+                        <p class="text-sm text-gray-600 mt-1">${alert.message}</p>
+                        ${alert.recommended_feed_kg ? `<p class="text-sm text-primary mt-1">Recommended: ${alert.recommended_feed_kg} kg/day</p>` : ''}
+                        ${alert.current_consumption_kg ? `<p class="text-sm text-orange-600">Current: ${alert.current_consumption_kg} kg/day</p>` : ''}
+                    </div>
+                    <span class="px-2 py-1 text-xs rounded-full bg-${severityColor}-100 text-${severityColor}-700">
+                        ${alert.severity}
+                    </span>
+                </div>
+                <div class="mt-3">
+                    <button onclick="resolveFeedAlert(${alert.id})" class="text-green-600 text-sm hover:underline">
+                        <i class="fas fa-check-circle mr-1"></i>Mark Resolved
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    $('#feedAlertsList').html(html);
+}
+
+// Add Consumption
+$('#addConsumptionForm').on('submit', function(e) {
+    e.preventDefault();
+    
+    const feedGiven = parseFloat($('#feedGiven').val()) || 0;
+    const currentStock = parseFloat($('#currentStock').val()) || 0;
+    
+    if (feedGiven <= 0) {
+        showToast('Error: Please enter a valid amount of feed given', 'error');
+        return;
+    }
+    
+    if (feedGiven > currentStock) {
+        showToast('Error: Feed given cannot exceed current stock!', 'error');
+        return;
+    }
+    
+    showLoading();
+    
+    // When recording consumption, feed_remaining is set to 0 (all feed given was consumed)
+    const formData = {
+        batch: flockId,
+        feed_type: $('#feedType').val(),
+        date: $('#consumeDate').val(),
+        feeding_time: $('#feedingTime').val(),
+        feed_given_kg: feedGiven,
+        feed_remaining_kg: 0,  // Assume all feed was consumed
+        bird_count: currentBirdCount,
+        notes: $('#consumeNotes').val()
+    };
+    
+    fetch('/api/v1/farms/feed-consumption/', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || `HTTP ${response.status}`);
+        return data;
+    })
+    .then(() => {
+        hideLoading();
+        showToast(`Feed consumption recorded: ${feedGiven.toFixed(1)} kg consumed`);
+        closeModal('addConsumptionModal');
+        $('#addConsumptionForm')[0].reset();
+        $('#feedGiven').val('0');
+        $('#currentStock').val('0');
+        $('#consumptionWarning').addClass('hidden');
+        loadAllData();
+    })
+    .catch(error => {
+        hideLoading();
+        showToast(error.message || 'Error saving record', 'error');
+    });
+});
+
+// Edit Consumption Functions
+function openEditConsumptionModal(recordId) {
+    showLoading();
+    fetch(`/api/v1/farms/feed-consumption/${recordId}/`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(record => {
+        hideLoading();
+        $('#editConsumptionId').val(record.id);
+        $('#editConsumeDate').val(record.date);
+        $('#editFeedingTime').val(record.feeding_time);
+        $('#editFeedGiven').val(record.feed_given_kg || 0);
+        $('#editConsumeNotes').val(record.notes || '');
+        
+        loadFeedTypesForEdit(record.feed_type);
+        $('#editConsumptionModal').removeClass('hidden');
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error loading consumption record:', error);
+        showToast('Error loading record', 'error');
+    });
+}
+
+function loadFeedTypesForEdit(selectedId) {
+    fetch('/api/v1/farms/feed-types/', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(types => {
+        let options = '<option value="">Select Feed Type</option>';
+        types.forEach(type => {
+            const selected = type.id == selectedId ? 'selected' : '';
+            options += `<option value="${type.id}" ${selected}>${type.name} - ${type.feed_stage_display}</option>`;
+        });
+        $('#editFeedType').html(options);
+    })
+    .catch(error => console.error('Error loading feed types:', error));
+}
+
+$('#editConsumptionForm').on('submit', function(e) {
+    e.preventDefault();
+    
+    const feedGiven = parseFloat($('#editFeedGiven').val()) || 0;
+    
+    if (feedGiven <= 0) {
+        showToast('Error: Please enter a valid amount of feed given', 'error');
+        return;
+    }
+    
+    showLoading();
+    
+    const recordId = $('#editConsumptionId').val();
+    const formData = {
+        batch: flockId,
+        feed_type: $('#editFeedType').val(),
+        date: $('#editConsumeDate').val(),
+        feeding_time: $('#editFeedingTime').val(),
+        feed_given_kg: feedGiven,
+        feed_remaining_kg: 0,  // Assume all feed was consumed
+        bird_count: currentBirdCount,
+        notes: $('#editConsumeNotes').val()
+    };
+    
+    fetch(`/api/v1/farms/feed-consumption/${recordId}/`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || `HTTP ${response.status}`);
+        return data;
+    })
+    .then(() => {
+        hideLoading();
+        showToast('Consumption record updated');
+        closeModal('editConsumptionModal');
+        loadAllData();
+    })
+    .catch(error => {
+        hideLoading();
+        showToast(error.message || 'Error updating record', 'error');
+    });
+});
+
+function deleteConsumptionRecord() {
+    const recordId = $('#editConsumptionId').val();
+    if (!confirm('Are you sure you want to delete this consumption record? This action cannot be undone.')) return;
+    
+    showLoading();
+    fetch(`/api/v1/farms/feed-consumption/${recordId}/`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(async response => {
+        if (!response.ok) {
+            const data = await response.json();
+            throw new Error(data.message || `HTTP ${response.status}`);
+        }
+        hideLoading();
+        showToast('Consumption record deleted');
+        closeModal('editConsumptionModal');
+        loadAllData();
+    })
+    .catch(error => {
+        hideLoading();
+        showToast(error.message || 'Error deleting record', 'error');
+    });
+}
+
+// Purchase Feed
+$('#purchaseForm').on('submit', function(e) {
+    e.preventDefault();
+    showLoading();
+    
+    const formData = {
+        feed_type: $('#purchaseFeedType').val(),
+        quantity_kg: parseFloat($('#quantityKg').val()),
+        cost_per_kg: parseFloat($('#costPerKgPurchase').val()),
+        supplier_name: $('#supplierName').val(),
+        invoice_number: $('#invoiceNumber').val(),
+        delivery_date: $('#deliveryDate').val(),
+        payment_status: $('#paymentStatus').val(),
+        notes: $('#purchaseNotes').val()
+    };
+    
+    fetch('/api/v1/farms/feed-purchases/', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || `HTTP ${response.status}`);
+        return data;
+    })
+    .then(() => {
+        hideLoading();
+        showToast('Feed purchase recorded successfully!');
+        closeModal('purchaseModal');
+        $('#purchaseForm')[0].reset();
+        loadAllData();
+    })
+    .catch(error => {
+        hideLoading();
+        showToast(error.message || 'Error recording purchase', 'error');
+    });
+});
+
+// Load feed types for dropdowns
+function loadFeedTypes() {
+    fetch('/api/v1/farms/feed-types/', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(types => {
+        let options = '<option value="">Select Feed Type</option>';
+        types.forEach(type => {
+            options += `<option value="${type.id}">${type.name} - ${type.feed_stage_display}</option>`;
+        });
+        $('#feedType, #purchaseFeedType').html(options);
+    })
+    .catch(error => console.error('Error loading feed types:', error));
+}
+
+function openAddConsumptionModal() {
+    const today = new Date().toISOString().split('T')[0];
+    $('#consumeDate').val(today);
+    $('#feedGiven').val('0');
+    $('#currentStock').val('0');
+    $('#consumptionWarning').addClass('hidden');
+    loadFeedTypes();
+    $('#addConsumptionModal').removeClass('hidden');
+}
+
+function openPurchaseModal() {
+    loadFeedTypes();
+    $('#purchaseModal').removeClass('hidden');
+}
+
+function resolveFeedAlert(id) {
+    fetch(`/api/v1/farms/feed-alerts/${id}/resolve/`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(() => {
+        showToast('Alert resolved');
+        loadFeedAlerts();
+    })
+    .catch(error => console.error('Error resolving alert:', error));
+}
+
+function closeModal(modalId) {
+    $(`#${modalId}`).addClass('hidden');
+}
+
+function showLoading() {
+    $('#loadingOverlay').removeClass('hidden');
+}
+
+function hideLoading() {
+    $('#loadingOverlay').addClass('hidden');
+}
+
+function showToast(message, type = 'success') {
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+    const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+    const toast = $(`
+        <div class="fixed bottom-20 left-1/2 transform -translate-x-1/2 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in">
+            <i class="fas ${icon} mr-2"></i>${message}
+        </div>
+    `);
+    $('body').append(toast);
+    setTimeout(() => toast.fadeOut(300, () => toast.remove()), 3000);
+}
+
+// Initialize
+$(document).ready(function() {
+    loadFlockInfo();
+});
+</script>
+
+<style>
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, 10px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #2E7D32;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+.spinner-small {
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #2E7D32;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    animation: spin 1s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}

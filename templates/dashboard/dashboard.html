@@ -1,0 +1,438 @@
+{% extends 'base.html' %}
+
+{% block title %}Farm Management - KUKUNET{% endblock %}
+
+{% block content %}
+<div class="p-4">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">
+            <i class="fas fa-tractor text-primary mr-2"></i>Farm Management
+        </h1>
+        <button onclick="openAddFlockModal()" class="bg-primary text-white px-4 py-2 rounded-xl text-sm">
+            <i class="fas fa-plus mr-1"></i>Add Flock
+        </button>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="flex space-x-2 mb-6 border-b">
+        <button class="tab-btn active px-4 py-2 text-primary border-b-2 border-primary" data-tab="flocks">
+            <i class="fas fa-chicken mr-1"></i>Flocks
+        </button>
+        <button class="tab-btn px-4 py-2 text-gray-500" data-tab="records">
+            <i class="fas fa-calendar-alt mr-1"></i>Daily Records
+        </button>
+        <button class="tab-btn px-4 py-2 text-gray-500" data-tab="expenses">
+            <i class="fas fa-chart-line mr-1"></i>Expenses
+        </button>
+        <button class="tab-btn px-4 py-2 text-gray-500" data-tab="vaccinations">
+            <i class="fas fa-syringe mr-1"></i>Vaccinations
+        </button>
+    </div>
+    
+    <!-- Flocks Tab Content -->
+    <div id="flocksTab" class="tab-content">
+        <div id="flocksList" class="space-y-3">
+            <!-- Loaded via AJAX -->
+        </div>
+    </div>
+    
+    <!-- Daily Records Tab -->
+    <div id="recordsTab" class="tab-content hidden">
+        <div class="card mb-4">
+            <form id="dailyRecordForm">
+                <h3 class="font-semibold mb-3">Add Daily Record</h3>
+                <select id="recordFlock" class="form-input mb-3" required>
+                    <option value="">Select Flock</option>
+                </select>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <input type="number" id="mortality" placeholder="Mortality" class="form-input">
+                    <input type="number" id="feedUsed" placeholder="Feed Used (kg)" class="form-input" step="0.1">
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <input type="number" id="eggsCollected" placeholder="Eggs Collected" class="form-input">
+                    <input type="number" id="waterUsed" placeholder="Water Used (L)" class="form-input" step="0.1">
+                </div>
+                <textarea id="recordNotes" placeholder="Notes" class="form-input mb-3" rows="2"></textarea>
+                <button type="submit" class="btn-primary w-full">Save Record</button>
+            </form>
+        </div>
+        <div id="recordsList" class="space-y-2">
+            <!-- Records will be loaded here -->
+        </div>
+    </div>
+    
+    <!-- Expenses Tab -->
+    <div id="expensesTab" class="tab-content hidden">
+        <div class="card mb-4">
+            <form id="expenseForm">
+                <h3 class="font-semibold mb-3">Add Expense</h3>
+                <select id="expenseCategory" class="form-input mb-3" required>
+                    <option value="">Select Category</option>
+                    <option value="FEED">Feed</option>
+                    <option value="VACCINES">Vaccines</option>
+                    <option value="MEDICATION">Medication</option>
+                    <option value="LABOR">Labor</option>
+                    <option value="UTILITIES">Utilities</option>
+                    <option value="MAINTENANCE">Maintenance</option>
+                    <option value="OTHER">Other</option>
+                </select>
+                <input type="number" id="expenseAmount" placeholder="Amount (UGX)" class="form-input mb-3" required>
+                <textarea id="expenseDescription" placeholder="Description" class="form-input mb-3" rows="2" required></textarea>
+                <button type="submit" class="btn-primary w-full">Add Expense</button>
+            </form>
+        </div>
+        <div id="expensesList" class="space-y-2">
+            <!-- Expenses will be loaded here -->
+        </div>
+    </div>
+    
+    <!-- Vaccinations Tab -->
+    <div id="vaccinationsTab" class="tab-content hidden">
+        <div class="card mb-4">
+            <form id="vaccinationForm">
+                <h3 class="font-semibold mb-3">Schedule Vaccination</h3>
+                <select id="vaccineFlock" class="form-input mb-3" required>
+                    <option value="">Select Flock</option>
+                </select>
+                <input type="text" id="vaccineName" placeholder="Vaccine Name" class="form-input mb-3" required>
+                <input type="date" id="scheduledDate" class="form-input mb-3" required>
+                <button type="submit" class="btn-primary w-full">Schedule</button>
+            </form>
+        </div>
+        <div id="vaccinationsList" class="space-y-2">
+            <!-- Vaccinations will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- Add Flock Modal -->
+<div id="addFlockModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-screen overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Add New Flock</h2>
+                <button onclick="closeModal('addFlockModal')" class="text-gray-500">&times;</button>
+            </div>
+            <form id="addFlockForm">
+                <input type="text" id="batchName" placeholder="Batch Name" class="form-input mb-3" required>
+                <select id="birdType" class="form-input mb-3" required>
+                    <option value="">Bird Type</option>
+                    <option value="LAYERS">Layers</option>
+                    <option value="BROILERS">Broilers</option>
+                    <option value="DAY_OLD">Day Old Chicks</option>
+                </select>
+                <input type="text" id="breed" placeholder="Breed" class="form-input mb-3" required>
+                <input type="number" id="quantity" placeholder="Quantity" class="form-input mb-3" required>
+                <input type="date" id="startDate" class="form-input mb-3" required>
+                <button type="submit" class="btn-primary w-full">Create Flock</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Tab switching
+$('.tab-btn').click(function() {
+    const tab = $(this).data('tab');
+    $('.tab-btn').removeClass('active text-primary border-b-2 border-primary').addClass('text-gray-500');
+    $(this).addClass('active text-primary border-b-2 border-primary');
+    $('.tab-content').addClass('hidden');
+    $(`#${tab}Tab`).removeClass('hidden');
+    
+    // Load tab data
+    if (tab === 'flocks') loadFlocks();
+    else if (tab === 'records') loadRecords();
+    else if (tab === 'expenses') loadExpenses();
+    else if (tab === 'vaccinations') loadVaccinations();
+});
+
+function loadFlocks() {
+    $.ajax({
+        url: '/api/v1/farms/flocks/',
+        method: 'GET',
+        success: function(data) {
+            displayFlocks(data);
+            populateFlockSelects(data);
+        }
+    });
+}
+
+function displayFlocks(flocks) {
+    if (flocks.length === 0) {
+        $('#flocksList').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-chicken text-5xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500">No flocks yet</p>
+                <button onclick="openAddFlockModal()" class="btn-primary mt-3">Add Your First Flock</button>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = '';
+    flocks.forEach(flock => {
+        html += `
+            <div class="card">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h3 class="font-bold text-lg">${flock.batch_name}</h3>
+                        <p class="text-sm text-gray-500">${flock.bird_type} - ${flock.breed}</p>
+                    </div>
+                    <span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">${flock.status}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-sm mb-3">
+                    <div><span class="text-gray-500">Quantity:</span> ${flock.quantity}</div>
+                    <div><span class="text-gray-500">Age:</span> ${flock.age_days} days</div>
+                    <div><span class="text-gray-500">Mortality:</span> ${flock.mortality_rate || 0}%</div>
+                    <div><span class="text-gray-500">Started:</span> ${flock.start_date}</div>
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="viewFlockDetails(${flock.id})" class="flex-1 btn-outline text-sm py-2">View Details</button>
+                    <button onclick="addDailyRecord(${flock.id})" class="flex-1 bg-primary text-white py-2 rounded-xl text-sm">Add Record</button>
+                </div>
+            </div>
+        `;
+    });
+    $('#flocksList').html(html);
+}
+
+function populateFlockSelects(flocks) {
+    let options = '<option value="">Select Flock</option>';
+    flocks.forEach(flock => {
+        options += `<option value="${flock.id}">${flock.batch_name}</option>`;
+    });
+    $('#recordFlock, #vaccineFlock').html(options);
+}
+
+function loadRecords() {
+    $.ajax({
+        url: '/api/v1/farms/daily-records/',
+        method: 'GET',
+        success: function(records) {
+            displayRecords(records);
+        }
+    });
+}
+
+function displayRecords(records) {
+    if (records.length === 0) {
+        $('#recordsList').html('<p class="text-center text-gray-500 py-4">No records yet</p>');
+        return;
+    }
+    
+    let html = '';
+    records.slice(0, 10).forEach(record => {
+        html += `
+            <div class="card">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="font-semibold">${record.date}</p>
+                        <p class="text-sm text-gray-500">Mortality: ${record.mortality}</p>
+                        <p class="text-sm text-gray-500">Feed: ${record.feed_used_kg} kg</p>
+                        ${record.eggs_collected ? `<p class="text-sm text-gray-500">Eggs: ${record.eggs_collected}</p>` : ''}
+                    </div>
+                    <i class="fas fa-check-circle text-success"></i>
+                </div>
+            </div>
+        `;
+    });
+    $('#recordsList').html(html);
+}
+
+function loadExpenses() {
+    $.ajax({
+        url: '/api/v1/farms/expenses/',
+        method: 'GET',
+        success: function(expenses) {
+            displayExpenses(expenses);
+        }
+    });
+}
+
+function displayExpenses(expenses) {
+    if (expenses.length === 0) {
+        $('#expensesList').html('<p class="text-center text-gray-500 py-4">No expenses recorded</p>');
+        return;
+    }
+    
+    let total = 0;
+    let html = '';
+    expenses.slice(0, 10).forEach(expense => {
+        total += parseFloat(expense.amount);
+        html += `
+            <div class="card">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="font-semibold">${expense.category}</p>
+                        <p class="text-sm text-gray-500">${expense.description}</p>
+                        <p class="text-xs text-gray-400">${expense.expense_date}</p>
+                    </div>
+                    <p class="font-bold text-danger">UGX ${parseFloat(expense.amount).toLocaleString()}</p>
+                </div>
+            </div>
+        `;
+    });
+    html += `
+        <div class="card bg-primary text-white">
+            <div class="flex justify-between items-center">
+                <span class="font-semibold">Total Expenses</span>
+                <span class="font-bold text-xl">UGX ${total.toLocaleString()}</span>
+            </div>
+        </div>
+    `;
+    $('#expensesList').html(html);
+}
+
+function loadVaccinations() {
+    $.ajax({
+        url: '/api/v1/farms/vaccinations/',
+        method: 'GET',
+        success: function(vaccinations) {
+            displayVaccinations(vaccinations);
+        }
+    });
+}
+
+function displayVaccinations(vaccinations) {
+    if (vaccinations.length === 0) {
+        $('#vaccinationsList').html('<p class="text-center text-gray-500 py-4">No vaccinations scheduled</p>');
+        return;
+    }
+    
+    let html = '';
+    vaccinations.forEach(vacc => {
+        html += `
+            <div class="card">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="font-semibold">${vacc.vaccine_name}</p>
+                        <p class="text-sm text-gray-500">Scheduled: ${vacc.scheduled_date}</p>
+                        ${vacc.administered_date ? `<p class="text-sm text-success">Administered: ${vacc.administered_date}</p>` : '<p class="text-sm text-warning">Pending</p>'}
+                    </div>
+                    <i class="fas ${vacc.administered_date ? 'fa-check-circle text-success' : 'fa-clock text-warning'} text-xl"></i>
+                </div>
+            </div>
+        `;
+    });
+    $('#vaccinationsList').html(html);
+}
+
+// Form submissions
+$('#dailyRecordForm').submit(function(e) {
+    e.preventDefault();
+    const data = {
+        batch: $('#recordFlock').val(),
+        mortality: $('#mortality').val() || 0,
+        feed_used_kg: $('#feedUsed').val() || 0,
+        eggs_collected: $('#eggsCollected').val() || 0,
+        water_used: $('#waterUsed').val() || 0,
+        notes: $('#recordNotes').val()
+    };
+    
+    $.ajax({
+        url: '/api/v1/farms/daily-records/',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function() {
+            showToast('Daily record saved!');
+            $('#dailyRecordForm')[0].reset();
+            loadRecords();
+        },
+        error: function() {
+            showToast('Error saving record', 'error');
+        }
+    });
+});
+
+$('#expenseForm').submit(function(e) {
+    e.preventDefault();
+    const data = {
+        category: $('#expenseCategory').val(),
+        amount: $('#expenseAmount').val(),
+        description: $('#expenseDescription').val(),
+        expense_date: new Date().toISOString().split('T')[0]
+    };
+    
+    $.ajax({
+        url: '/api/v1/farms/expenses/',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function() {
+            showToast('Expense added!');
+            $('#expenseForm')[0].reset();
+            loadExpenses();
+        },
+        error: function() {
+            showToast('Error adding expense', 'error');
+        }
+    });
+});
+
+$('#vaccinationForm').submit(function(e) {
+    e.preventDefault();
+    const data = {
+        batch: $('#vaccineFlock').val(),
+        vaccine_name: $('#vaccineName').val(),
+        scheduled_date: $('#scheduledDate').val()
+    };
+    
+    $.ajax({
+        url: '/api/v1/farms/vaccinations/',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function() {
+            showToast('Vaccination scheduled!');
+            $('#vaccinationForm')[0].reset();
+            loadVaccinations();
+        },
+        error: function() {
+            showToast('Error scheduling vaccination', 'error');
+        }
+    });
+});
+
+$('#addFlockForm').submit(function(e) {
+    e.preventDefault();
+    const data = {
+        batch_name: $('#batchName').val(),
+        bird_type: $('#birdType').val(),
+        breed: $('#breed').val(),
+        quantity: $('#quantity').val(),
+        start_date: $('#startDate').val()
+    };
+    
+    $.ajax({
+        url: '/api/v1/farms/flocks/',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function() {
+            showToast('Flock created!');
+            closeModal('addFlockModal');
+            $('#addFlockForm')[0].reset();
+            loadFlocks();
+        },
+        error: function() {
+            showToast('Error creating flock', 'error');
+        }
+    });
+});
+
+function openAddFlockModal() {
+    $('#addFlockModal').removeClass('hidden');
+}
+
+function closeModal(modalId) {
+    $(`#${modalId}`).addClass('hidden');
+}
+
+// Load initial data
+$(document).ready(function() {
+    loadFlocks();
+});
+</script>
+{% endblock %}

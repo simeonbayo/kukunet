@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - KUKUNET{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-primary to-primary-dark">
+    <div class="w-full max-w-md">
+        <!-- Logo - White version for dark/green background -->
+        <div class="text-center mb-8">
+            <div class="flex justify-center mb-4">
+                <img src="/static/images/logo/logo-white.svg" alt="KUKUNET" style="height: 55px;">
+            </div>
+            <p class="text-white/80 mt-2 text-sm">Poultry Farm Management Platform</p>
+        </div>
+        
+        <div class="bg-white rounded-2xl shadow-xl p-6">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">
+                <i class="fas fa-sign-in-alt text-primary mr-2"></i>Welcome Back
+            </h2>
+            
+            <form id="loginForm">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">
+                        <i class="fas fa-phone-alt text-primary mr-2"></i>Phone Number
+                    </label>
+                    <input type="tel" id="phoneNumber" class="form-input" placeholder="256712345678" required>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">
+                        <i class="fas fa-lock text-primary mr-2"></i>4-Digit PIN
+                    </label>
+                    <input type="password" id="pin" class="form-input text-center text-2xl tracking-widest" placeholder="••••" maxlength="4" required>
+                </div>
+                
+                <button type="submit" class="btn-primary w-full">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Sign In</span>
+                </button>
+            </form>
+            
+            <div class="mt-6 text-center">
+                <p class="text-gray-600">
+                    Don't have an account? 
+                    <a href="{% url 'frontend:register' %}" class="text-primary font-semibold hover:underline">
+                        <i class="fas fa-user-plus mr-1"></i>Register Now
+                    </a>
+                </p>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-3 gap-4 mt-8">
+            <div class="text-center text-white">
+                <i class="fas fa-tractor text-2xl mb-2"></i>
+                <p class="text-xs">Farm Management</p>
+            </div>
+            <div class="text-center text-white">
+                <i class="fas fa-store text-2xl mb-2"></i>
+                <p class="text-xs">Marketplace</p>
+            </div>
+            <div class="text-center text-white">
+                <i class="fas fa-graduation-cap text-2xl mb-2"></i>
+                <p class="text-xs">Learning</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalHtml = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Logging in...</span>';
+    
+    const phoneNumber = document.getElementById('phoneNumber').value.replace(/[^0-9]/g, '');
+    const pin = document.getElementById('pin').value;
+    
+    fetch('/api/v1/auth/login/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+            phone_number: phoneNumber,
+            pin: pin
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Login successful! Redirecting...');
+            setTimeout(() => {
+                window.location.href = '/dashboard/';
+            }, 1000);
+        } else {
+            showToast(data.message || 'Login failed', 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalHtml;
+        }
+    })
+    .catch(error => {
+        showToast('Network error. Please try again.', 'error');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalHtml;
+    });
+});
+
+document.getElementById('pin').addEventListener('input', function(e) {
+    this.value = this.value.replace(/[^0-9]/g, '').slice(0, 4);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}Research Dashboard - KUKUNET{% endblock %}
+
+{% block content %}
+<div class="p-4">
+    <!-- Welcome Section -->
+    <div class="bg-gradient-to-r from-yellow-700 to-yellow-600 text-white rounded-2xl p-5 mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold">
+                    <i class="fas fa-microscope mr-2"></i>{{ user.organization_name }}
+                </h1>
+                <p class="opacity-90 mt-1">Research Institution Dashboard</p>
+            </div>
+            <div class="bg-white/20 rounded-full p-3">
+                <i class="fas fa-flask text-3xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Research Stats -->
+    <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="card text-center">
+            <i class="fas fa-file-alt text-3xl text-yellow-600"></i>
+            <p class="text-2xl font-bold mt-2" id="studies">0</p>
+            <p class="text-gray-500 text-sm">Active Studies</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-chart-line text-3xl text-yellow-600"></i>
+            <p class="text-2xl font-bold mt-2" id="dataPoints">0</p>
+            <p class="text-gray-500 text-sm">Data Points Collected</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-file-pdf text-3xl text-yellow-600"></i>
+            <p class="text-2xl font-bold mt-2" id="publications">0</p>
+            <p class="text-gray-500 text-sm">Publications</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-users text-3xl text-yellow-600"></i>
+            <p class="text-2xl font-bold mt-2" id="collaborators">0</p>
+            <p class="text-gray-500 text-sm">Collaborators</p>
+        </div>
+    </div>
+
+    <!-- Research Actions -->
+    <div class="grid grid-cols-3 gap-3 mb-6">
+        <button onclick="openNewStudy()" class="bg-white p-3 rounded-xl text-center shadow-sm">
+            <i class="fas fa-plus-circle text-yellow-600 text-xl"></i>
+            <p class="text-xs mt-1">New Study</p>
+        </button>
+        <button onclick="openDataCollection()" class="bg-white p-3 rounded-xl text-center shadow-sm">
+            <i class="fas fa-database text-yellow-600 text-xl"></i>
+            <p class="text-xs mt-1">Data Collection</p>
+        </button>
+        <button onclick="openPublication()" class="bg-white p-3 rounded-xl text-center shadow-sm">
+            <i class="fas fa-scroll text-yellow-600 text-xl"></i>
+            <p class="text-xs mt-1">Publication</p>
+        </button>
+    </div>
+
+    <!-- Active Studies -->
+    <div class="mb-6">
+        <h2 class="text-lg font-bold mb-3">Active Research Studies</h2>
+        <div id="studiesList" class="space-y-2"></div>
+    </div>
+
+    <!-- Recent Publications -->
+    <div>
+        <h2 class="text-lg font-bold mb-3">Recent Publications</h2>
+        <div id="publicationsList" class="space-y-2"></div>
+    </div>
+</div>
+{% endblock %}

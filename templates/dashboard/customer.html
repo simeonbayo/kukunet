@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Customer Dashboard - KUKUNET{% endblock %}
+
+{% block content %}
+<div class="p-4">
+    <!-- Welcome Section -->
+    <div class="bg-gradient-to-r from-blue-700 to-blue-600 text-white rounded-2xl p-5 mb-6">
+        <h1 class="text-2xl font-bold">🛒 Welcome, Customer {{ user.full_name }}!</h1>
+        <p class="opacity-90 mt-1">Shop for poultry products and supplies</p>
+        <p class="text-sm mt-2">{{ today|date:"l, F j, Y" }}</p>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="card text-center">
+            <i class="fas fa-shopping-cart text-3xl text-blue-600"></i>
+            <p class="text-2xl font-bold mt-2">0</p>
+            <p class="text-gray-500 text-sm">Total Orders</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-truck text-3xl text-blue-600"></i>
+            <p class="text-2xl font-bold mt-2">0</p>
+            <p class="text-gray-500 text-sm">Pending Delivery</p>
+        </div>
+    </div>
+    
+    <!-- Featured Products -->
+    <div class="mb-6">
+        <h2 class="text-lg font-bold mb-3">Featured Products</h2>
+        <div class="card">
+            <p class="text-gray-500 text-center py-4">No products available</p>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div>
+        <h2 class="text-lg font-bold mb-3">Quick Links</h2>
+        <div class="grid grid-cols-2 gap-3">
+            <button class="bg-white p-3 rounded-xl text-center shadow-sm">
+                <i class="fas fa-store text-blue-600 text-xl"></i>
+                <p class="text-xs mt-1">Browse Products</p>
+            </button>
+            <button class="bg-white p-3 rounded-xl text-center shadow-sm">
+                <i class="fas fa-shopping-cart text-blue-600 text-xl"></i>
+                <p class="text-xs mt-1">My Cart</p>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

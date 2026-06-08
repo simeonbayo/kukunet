@@ -1,0 +1,226 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard - KUKUNET{% endblock %}
+
+{% block content %}
+<div class="p-4">
+    <!-- Welcome Header -->
+    <div class="bg-gradient-to-r from-primary to-primary-light text-white rounded-2xl p-5 mb-6 animate-slide-up">
+        <div class="flex justify-between items-start">
+            <div>
+                <h1 class="text-2xl font-bold">Welcome back, {{ user.full_name|default:'Farmer' }}! 👋</h1>
+                <p class="opacity-90 mt-1">{{ today|date:"l, F j, Y" }}</p>
+            </div>
+            <div class="bg-white/20 rounded-full p-2">
+                <i class="fas fa-chicken text-2xl"></i>
+            </div>
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-3">
+            <div class="bg-white/10 rounded-xl p-2 text-center">
+                <p class="text-2xl font-bold">{{ total_birds|default:"0" }}</p>
+                <p class="text-xs">Total Birds</p>
+            </div>
+            <div class="bg-white/10 rounded-xl p-2 text-center">
+                <p class="text-2xl font-bold">{{ today_eggs|default:"0" }}</p>
+                <p class="text-xs">Eggs Today</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">Active Flocks</p>
+                    <p class="text-2xl font-bold text-gray-800">{{ active_flocks|default:"0" }}</p>
+                </div>
+                <div class="bg-primary/10 rounded-full p-3">
+                    <i class="fas fa-chicken text-primary text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">Mortality Rate</p>
+                    <p class="text-2xl font-bold text-gray-800">{{ mortality_rate|default:"0" }}%</p>
+                </div>
+                <div class="bg-danger/10 rounded-full p-3">
+                    <i class="fas fa-chart-line text-danger text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">Total Sales</p>
+                    <p class="text-2xl font-bold text-gray-800">UGX {{ total_sales|default:"0"|floatformat:0 }}</p>
+                </div>
+                <div class="bg-success/10 rounded-full p-3">
+                    <i class="fas fa-dollar-sign text-success text-xl"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-gray-500 text-sm">Feed Stock</p>
+                    <p class="text-2xl font-bold text-gray-800">{{ feed_stock|default:"0" }} kg</p>
+                </div>
+                <div class="bg-warning/10 rounded-full p-3">
+                    <i class="fas fa-box text-warning text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Active Flocks Section -->
+    <div class="mb-6">
+        <div class="flex justify-between items-center mb-3">
+            <h2 class="text-lg font-bold text-gray-800">
+                <i class="fas fa-chicken mr-2 text-primary"></i>Active Flocks
+            </h2>
+            <!-- FIXED: Use namespace 'frontend:farm_dashboard' or hardcoded URL -->
+            <a href="{% url 'frontend:farm_dashboard' %}" class="text-primary text-sm">View All →</a>
+        </div>
+        
+        <div id="flocksList" class="space-y-3">
+            <!-- Flocks will be loaded via AJAX -->
+            <div class="card animate-pulse">
+                <div class="skeleton h-20 rounded"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="mb-6">
+        <h2 class="text-lg font-bold text-gray-800 mb-3">
+            <i class="fas fa-bolt mr-2 text-secondary"></i>Quick Actions
+        </h2>
+        <div class="grid grid-cols-4 gap-3">
+            <button onclick="openAction('daily-record')" class="bg-white p-3 rounded-xl text-center shadow-sm hover:shadow-md transition">
+                <i class="fas fa-clipboard-list text-primary text-xl"></i>
+                <p class="text-xs mt-1">Daily Record</p>
+            </button>
+            <button onclick="openAction('vaccination')" class="bg-white p-3 rounded-xl text-center shadow-sm hover:shadow-md transition">
+                <i class="fas fa-syringe text-primary text-xl"></i>
+                <p class="text-xs mt-1">Vaccinate</p>
+            </button>
+            <button onclick="openAction('expense')" class="bg-white p-3 rounded-xl text-center shadow-sm hover:shadow-md transition">
+                <i class="fas fa-receipt text-primary text-xl"></i>
+                <p class="text-xs mt-1">Expense</p>
+            </button>
+            <button onclick="openAction('order')" class="bg-white p-3 rounded-xl text-center shadow-sm hover:shadow-md transition">
+                <i class="fas fa-shopping-cart text-primary text-xl"></i>
+                <p class="text-xs mt-1">Order</p>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Recent Alerts -->
+    <div>
+        <h2 class="text-lg font-bold text-gray-800 mb-3">
+            <i class="fas fa-bell mr-2 text-warning"></i>Recent Alerts
+        </h2>
+        <div id="alertsList" class="space-y-2">
+            <div class="card">
+                <div class="flex items-start space-x-3">
+                    <i class="fas fa-info-circle text-info mt-1"></i>
+                    <div class="flex-1">
+                        <p class="text-sm">Welcome to KUKUNET! Start by adding your first flock.</p>
+                        <p class="text-xs text-gray-500 mt-1">Just now</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Load dashboard data
+function loadDashboard() {
+    $.ajax({
+        url: '/api/v1/analytics/dashboard/',
+        method: 'GET',
+        success: function(data) {
+            updateDashboard(data);
+        },
+        error: function() {
+            console.log('Using mock data');
+        }
+    });
+}
+
+function loadFlocks() {
+    $.ajax({
+        url: '/api/v1/farms/flocks/',
+        method: 'GET',
+        success: function(flocks) {
+            displayFlocks(flocks);
+        }
+    });
+}
+
+function displayFlocks(flocks) {
+    if (flocks.length === 0) {
+        $('#flocksList').html(`
+            <div class="card text-center">
+                <i class="fas fa-chicken text-4xl text-gray-300 mb-2"></i>
+                <p class="text-gray-500">No active flocks</p>
+                <button onclick="openAction('add-flock')" class="btn-primary mt-3 text-sm py-2 px-4">
+                    Add Your First Flock
+                </button>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = '';
+    flocks.slice(0, 3).forEach(flock => {
+        html += `
+            <div class="card">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="font-semibold text-gray-800">${flock.batch_name}</h3>
+                        <p class="text-sm text-gray-500">${flock.bird_type} • ${flock.breed}</p>
+                        <p class="text-sm mt-1">${flock.quantity} birds • ${flock.age_days} days</p>
+                    </div>
+                    <span class="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">Active</span>
+                </div>
+                <div class="mt-3">
+                    <div class="bg-gray-200 rounded-full h-2 overflow-hidden">
+                        <div class="bg-primary h-2 rounded-full" style="width: ${flock.mortality_rate ? 100 - flock.mortality_rate : 100}%"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-500 mt-1">
+                        <span>Health: ${flock.mortality_rate ? 100 - flock.mortality_rate : 100}%</span>
+                        <span>Mortality: ${flock.mortality_rate || 0}%</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    $('#flocksList').html(html);
+}
+
+function openAction(action) {
+    if (action === 'add-flock') {
+        window.location.href = "{% url 'frontend:farm_dashboard' %}";
+    } else {
+        showToast(`Opening ${action} form...`);
+    }
+}
+
+// Initialize dashboard
+$(document).ready(function() {
+    loadFlocks();
+});
+
+// Make functions global
+window.openAction = openAction;
+</script>
+{% endblock %}

@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50" width="200" height="50">
+  <defs>
+    <linearGradient id="primaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2E7D32;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4CAF50;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="secondaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF8F00;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFB74D;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Chicken Icon -->
+  <g transform="translate(2, 5)">
+    <!-- Body -->
+    <ellipse cx="14" cy="16" rx="9" ry="7" fill="url(#primaryGradient)"/>
+    <!-- Head -->
+    <circle cx="22" cy="11" r="5" fill="url(#primaryGradient)"/>
+    <!-- Eye -->
+    <circle cx="23.5" cy="10" r="1.2" fill="white"/>
+    <circle cx="23.8" cy="10" r="0.6" fill="#1a1a1a"/>
+    <!-- Beak -->
+    <polygon points="27,11 30,12 27,13" fill="url(#secondaryGradient)"/>
+    <!-- Comb -->
+    <path d="M20 7 Q21 4 22 7 Q23 5 24 7 Q25 5 26 7" fill="url(#secondaryGradient)"/>
+    <!-- Wing -->
+    <path d="M12 15 Q9 13 7 16 Q5 18 8 19 Q10 20 12 18" fill="url(#primaryGradient)" opacity="0.6"/>
+    <!-- Tail feathers -->
+    <path d="M5 13 Q2 9 4 6" stroke="url(#primaryGradient)" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M6 15 Q3 12 5 8" stroke="url(#primaryGradient)" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <path d="M7 17 Q4 15 6 11" stroke="url(#primaryGradient)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <!-- Legs -->
+    <line x1="12" y1="22" x2="11" y2="26" stroke="url(#secondaryGradient)" stroke-width="1.8" stroke-linecap="round"/>
+    <line x1="14" y1="22" x2="13" y2="26" stroke="url(#secondaryGradient)" stroke-width="1.8" stroke-linecap="round"/>
+    <!-- Feet -->
+    <path d="M9 26 L11 26 L13 26" stroke="url(#secondaryGradient)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <path d="M11 26 L13 26 L15 26" stroke="url(#secondaryGradient)" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="40" y="30" font-family="'Inter', 'Segoe UI', Arial, sans-serif" font-size="20" font-weight="800" fill="url(#primaryGradient)" letter-spacing="1.5">KUKU</text>
+  <text x="98" y="30" font-family="'Inter', 'Segoe UI', Arial, sans-serif" font-size="20" font-weight="500" fill="#6B7280" letter-spacing="1.5">NET</text>
+  
+  <!-- Dot accent -->
+  <circle cx="140" cy="26" r="3" fill="url(#secondaryGradient)"/>
+</svg>

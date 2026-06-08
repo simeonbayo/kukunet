@@ -46,6 +46,9 @@ INSTALLED_APPS = [
     'notifications',
     'adminpanel',
     'analytics',
+    'frontend',
+    'field_officer',
+    'organizations',
 ]
 
 MIDDLEWARE = [
@@ -132,6 +135,8 @@ AUTH_USER_MODEL = 'accounts.User'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'accounts.authentication.PINAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -163,8 +168,23 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',  # Default
 ]
 
-# Login URL
-LOGIN_URL = '/admin/login/'
+# Authentication settings
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/dashboard/'
+
+# Session settings
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_COOKIE_AGE = 86400  # 24 hours
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SECURE = False  # Set to True in production
+
+# CSRF settings
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_HTTPONLY = False
+CSRF_USE_SESSIONS = False
 
 # Celery Configuration (if using)
 CELERY_BROKER_URL = os.getenv('REDIS_URL', 'redis://localhost:6379')

@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+
+{% block title %}Supplier Dashboard - KUKUNET{% endblock %}
+
+{% block content %}
+<div class="p-4">
+    <!-- Welcome Section -->
+    <div class="bg-gradient-to-r from-orange-700 to-orange-600 text-white rounded-2xl p-5 mb-6">
+        <h1 class="text-2xl font-bold">📦 Welcome, Supplier {{ user.full_name }}!</h1>
+        <p class="opacity-90 mt-1">Manage your products and orders</p>
+        <p class="text-sm mt-2">{{ today|date:"l, F j, Y" }}</p>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="card text-center">
+            <i class="fas fa-box text-3xl text-orange-600"></i>
+            <p class="text-2xl font-bold mt-2">0</p>
+            <p class="text-gray-500 text-sm">Products</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-shopping-cart text-3xl text-orange-600"></i>
+            <p class="text-2xl font-bold mt-2">0</p>
+            <p class="text-gray-500 text-sm">Orders</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-truck text-3xl text-orange-600"></i>
+            <p class="text-2xl font-bold mt-2">0</p>
+            <p class="text-gray-500 text-sm">Pending Delivery</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-dollar-sign text-3xl text-yellow-600"></i>
+            <p class="text-2xl font-bold mt-2">UGX 0</p>
+            <p class="text-gray-500 text-sm">Revenue</p>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="mb-6">
+        <h2 class="text-lg font-bold mb-3">Quick Actions</h2>
+        <div class="grid grid-cols-3 gap-3">
+            <button class="bg-white p-3 rounded-xl text-center shadow-sm">
+                <i class="fas fa-plus-circle text-orange-600 text-xl"></i>
+                <p class="text-xs mt-1">Add Product</p>
+            </button>
+            <button class="bg-white p-3 rounded-xl text-center shadow-sm">
+                <i class="fas fa-boxes text-orange-600 text-xl"></i>
+                <p class="text-xs mt-1">Manage Stock</p>
+            </button>
+            <button class="bg-white p-3 rounded-xl text-center shadow-sm">
+                <i class="fas fa-clipboard-list text-orange-600 text-xl"></i>
+                <p class="text-xs mt-1">View Orders</p>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Recent Orders -->
+    <div>
+        <h2 class="text-lg font-bold mb-3">Recent Orders</h2>
+        <div class="card">
+            <p class="text-gray-500 text-center py-4">No orders yet</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

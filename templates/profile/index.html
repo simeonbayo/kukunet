@@ -1,0 +1,377 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile - KUKUNET{% endblock %}
+
+{% block content %}
+<div class="p-4">
+    <!-- Profile Header -->
+    <div class="bg-gradient-to-r from-primary to-primary-light text-white rounded-2xl p-6 mb-6 text-center">
+        <div class="bg-white rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-3 shadow-lg">
+            <i class="fas fa-user text-5xl text-primary"></i>
+        </div>
+        <h2 class="text-xl font-bold">{{ user.full_name|default:"Farmer" }}</h2>
+        <p class="text-white/80">{{ user.phone_number }}</p>
+        <p class="text-white/70 text-sm mt-1">
+            <i class="fas fa-tag mr-1"></i>{{ user.get_role_display }}
+        </p>
+    </div>
+    
+    <!-- Stats -->
+    <div class="grid grid-cols-3 gap-3 mb-6">
+        <div class="card text-center">
+            <i class="fas fa-calendar-alt text-primary text-xl"></i>
+            <p class="text-2xl font-bold mt-1">{{ member_days|default:"1" }}</p>
+            <p class="text-xs text-gray-500">Days Active</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-chicken text-primary text-xl"></i>
+            <p class="text-2xl font-bold mt-1">{{ total_flocks|default:"0" }}</p>
+            <p class="text-xs text-gray-500">Flocks</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-certificate text-primary text-xl"></i>
+            <p class="text-2xl font-bold mt-1">{{ certificates|default:"0" }}</p>
+            <p class="text-xs text-gray-500">Certificates</p>
+        </div>
+    </div>
+    
+    <!-- Menu Options -->
+    <div class="space-y-2">
+        <div class="card">
+            <div class="flex items-center justify-between cursor-pointer" onclick="toggleSection('personalInfo')">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-user-circle text-primary text-xl"></i>
+                    <span class="font-semibold">Personal Information</span>
+                </div>
+                <i class="fas fa-chevron-down text-gray-400"></i>
+            </div>
+            <div id="personalInfo" class="hidden mt-3 pt-3 border-t">
+                <div class="space-y-2">
+                    <div>
+                        <label class="text-sm text-gray-500">Full Name</label>
+                        <p class="font-medium">{{ user.full_name }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-500">Phone Number</label>
+                        <p class="font-medium">{{ user.phone_number }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-500">Account Type</label>
+                        <p class="font-medium">{{ user.get_role_display }}</p>
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-500">Member Since</label>
+                        <p class="font-medium">{{ user.created_at|date:"F j, Y" }}</p>
+                    </div>
+                    <button onclick="editProfile()" class="btn-outline w-full mt-2 text-sm py-2">
+                        <i class="fas fa-edit mr-1"></i>Edit Profile
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="flex items-center justify-between cursor-pointer" onclick="toggleSection('security')">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-lock text-primary text-xl"></i>
+                    <span class="font-semibold">Security</span>
+                </div>
+                <i class="fas fa-chevron-down text-gray-400"></i>
+            </div>
+            <div id="security" class="hidden mt-3 pt-3 border-t">
+                <form id="changePinForm">
+                    <div class="space-y-3">
+                        <input type="password" id="oldPin" placeholder="Current PIN" class="form-input text-center text-xl tracking-widest" maxlength="4" required>
+                        <input type="password" id="newPin" placeholder="New PIN" class="form-input text-center text-xl tracking-widest" maxlength="4" required>
+                        <input type="password" id="confirmPin" placeholder="Confirm New PIN" class="form-input text-center text-xl tracking-widest" maxlength="4" required>
+                        <button type="submit" class="btn-primary w-full">Change PIN</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="flex items-center justify-between cursor-pointer" onclick="toggleSection('notifications')">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-bell text-primary text-xl"></i>
+                    <span class="font-semibold">Notifications</span>
+                </div>
+                <i class="fas fa-chevron-down text-gray-400"></i>
+            </div>
+            <div id="notifications" class="hidden mt-3 pt-3 border-t">
+                <div class="space-y-3">
+                    <label class="flex items-center justify-between">
+                        <span>Email Notifications</span>
+                        <input type="checkbox" id="emailNotifications" class="toggle">
+                    </label>
+                    <label class="flex items-center justify-between">
+                        <span>SMS Notifications</span>
+                        <input type="checkbox" id="smsNotifications" class="toggle">
+                    </label>
+                    <button onclick="savePreferences()" class="btn-primary w-full text-sm py-2">Save Preferences</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="flex items-center justify-between cursor-pointer" onclick="toggleSection('support')">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-headset text-primary text-xl"></i>
+                    <span class="font-semibold">Support</span>
+                </div>
+                <i class="fas fa-chevron-down text-gray-400"></i>
+            </div>
+            <div id="support" class="hidden mt-3 pt-3 border-t">
+                <div class="space-y-3">
+                    <a href="#" class="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg">
+                        <i class="fas fa-question-circle text-primary"></i>
+                        <span>Help Center</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg">
+                        <i class="fas fa-comment-dots text-primary"></i>
+                        <span>Contact Support</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg">
+                        <i class="fas fa-file-alt text-primary"></i>
+                        <span>Terms & Conditions</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Updated Logout Button -->
+        <div class="card mt-4">
+            <form id="logoutForm" method="post" action="{% url 'frontend:logout' %}">
+                {% csrf_token %}
+                <button type="submit" class="w-full text-danger font-semibold py-2">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Toggle sections
+function toggleSection(sectionId) {
+    $(`#${sectionId}`).toggleClass('hidden');
+}
+
+// Change PIN form handler
+$('#changePinForm').submit(function(e) {
+    e.preventDefault();
+    const newPin = $('#newPin').val();
+    const confirmPin = $('#confirmPin').val();
+    
+    if (newPin !== confirmPin) {
+        showToast('New PINs do not match', 'error');
+        return;
+    }
+    
+    if (newPin.length !== 4 || !/^\d+$/.test(newPin)) {
+        showToast('PIN must be 4 digits', 'error');
+        return;
+    }
+    
+    const csrftoken = getCookie('csrftoken');
+    
+    $.ajax({
+        url: '/api/v1/auth/change-pin/',
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken
+        },
+        contentType: 'application/json',
+        data: JSON.stringify({
+            old_pin: $('#oldPin').val(),
+            new_pin: newPin,
+            confirm_pin: confirmPin
+        }),
+        success: function(response) {
+            if (response.success) {
+                showToast('PIN changed successfully!');
+                $('#changePinForm')[0].reset();
+                $('#security').addClass('hidden');
+            } else {
+                showToast(response.message || 'Error changing PIN', 'error');
+            }
+        },
+        error: function(xhr) {
+            const error = xhr.responseJSON;
+            showToast(error?.message || 'Error changing PIN', 'error');
+        }
+    });
+});
+
+// Logout form handler - direct submit
+$('#logoutForm').on('submit', function(e) {
+    // No need to prevent default - let it submit normally
+    showLoading();
+    // The form will submit to the logout URL
+});
+
+// Alternative: AJAX logout (if you prefer AJAX instead of form submit)
+function logoutAjax() {
+    showLoading();
+    const csrftoken = getCookie('csrftoken');
+    
+    $.ajax({
+        url: '{% url "frontend:logout" %}',
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        success: function(response) {
+            hideLoading();
+            if (response.success) {
+                showToast('Logout successful!');
+                setTimeout(() => {
+                    window.location.href = '/login/';
+                }, 1000);
+            }
+        },
+        error: function() {
+            hideLoading();
+            window.location.href = '/login/';
+        }
+    });
+}
+
+function editProfile() {
+    showToast('Profile editing coming soon!');
+}
+
+function savePreferences() {
+    const emailNotifications = $('#emailNotifications').is(':checked');
+    const smsNotifications = $('#smsNotifications').is(':checked');
+    
+    $.ajax({
+        url: '/api/v1/auth/profile/',
+        method: 'PATCH',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            notification_preferences: {
+                email: emailNotifications,
+                sms: smsNotifications
+            }
+        }),
+        success: function() {
+            showToast('Preferences saved!');
+        },
+        error: function() {
+            showToast('Error saving preferences', 'error');
+        }
+    });
+}
+
+// Helper function to get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Global functions needed by base template
+window.showToast = function(message, type = 'success') {
+    const toast = $(`
+        <div class="toast">
+            <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'} mr-2"></i>
+            ${message}
+        </div>
+    `);
+    $('#toastContainer').append(toast);
+    setTimeout(() => {
+        toast.fadeOut(300, () => toast.remove());
+    }, 3000);
+};
+
+window.showLoading = function() {
+    $('#loadingOverlay').removeClass('hidden');
+};
+
+window.hideLoading = function() {
+    $('#loadingOverlay').addClass('hidden');
+};
+
+// Initialize any additional functionality
+$(document).ready(function() {
+    // Load user preferences
+    $.ajax({
+        url: '/api/v1/auth/profile/',
+        method: 'GET',
+        success: function(data) {
+            if (data.profile && data.profile.notification_preferences) {
+                $('#emailNotifications').prop('checked', data.profile.notification_preferences.email || false);
+                $('#smsNotifications').prop('checked', data.profile.notification_preferences.sms || false);
+            }
+        }
+    });
+});
+</script>
+
+<style>
+.toggle {
+    appearance: none;
+    width: 50px;
+    height: 24px;
+    background: #ccc;
+    border-radius: 50px;
+    position: relative;
+    cursor: pointer;
+    transition: 0.3s;
+}
+.toggle:checked {
+    background: #2E7D32;
+}
+.toggle::before {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    transition: 0.3s;
+}
+.toggle:checked::before {
+    left: 26px;
+}
+
+.toast {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 50px;
+    z-index: 1000;
+    animation: slideUp 0.3s ease-out;
+    max-width: 90%;
+    text-align: center;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translate(-50%, 20px);
+        opacity: 0;
+    }
+    to {
+        transform: translate(-50%, 0);
+        opacity: 1;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,185 @@
+<!-- templates/marketplace/order_detail.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Order #{{ order.order_number }} - Poultry Farm{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">Order #{{ order.order_number }}</h1>
+                    <p class="text-gray-600">Placed on {{ order.created_at|date:"F j, Y" }}</p>
+                </div>
+                <div class="text-right">
+                    <span class="inline-block px-4 py-2 rounded-lg text-white 
+                        {% if order.status == 'DELIVERED' %}bg-green-600
+                        {% elif order.status == 'CANCELLED' %}bg-red-600
+                        {% elif order.status == 'SHIPPED' %}bg-blue-600
+                        {% else %}bg-yellow-600{% endif %}">
+                        {{ order.get_status_display }}
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Order Timeline -->
+            <div class="mb-8">
+                <h2 class="font-semibold text-lg mb-4">Order Timeline</h2>
+                <div id="orderTimeline" class="relative">
+                    <!-- Timeline will be populated by JS -->
+                </div>
+            </div>
+            
+            <!-- Order Items -->
+            <div class="border-t pt-6 mb-6">
+                <h2 class="font-semibold text-lg mb-4">Order Items</h2>
+                <div class="space-y-4">
+                    {% for item in order.items.all %}
+                    <div class="flex gap-4 py-3 border-b">
+                        <img src="{{ item.product.main_image.url|default:'/static/images/placeholder.png' }}" 
+                             class="w-24 h-24 object-cover rounded">
+                        <div class="flex-1">
+                            <h3 class="font-semibold">{{ item.product.name }}</h3>
+                            <p class="text-gray-600">Quantity: {{ item.quantity }}</p>
+                            <p class="text-green-600">${{ item.price }} each</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-semibold">${{ item.subtotal }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- Order Summary -->
+            <div class="border-t pt-6">
+                <div class="flex justify-end">
+                    <div class="w-80 space-y-2">
+                        <div class="flex justify-between">
+                            <span>Subtotal:</span>
+                            <span>${{ order.subtotal }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Shipping:</span>
+                            <span>${{ order.shipping_cost }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Tax:</span>
+                            <span>${{ order.tax }}</span>
+                        </div>
+                        {% if order.discount > 0 %}
+                        <div class="flex justify-between text-green-600">
+                            <span>Discount:</span>
+                            <span>-${{ order.discount }}</span>
+                        </div>
+                        {% endif %}
+                        <div class="flex justify-between font-bold text-lg pt-2 border-t">
+                            <span>Total:</span>
+                            <span>${{ order.total }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Shipping Info -->
+            <div class="border-t pt-6 mt-6">
+                <h2 class="font-semibold text-lg mb-4">Shipping Information</h2>
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <p>{{ order.shipping_address }}</p>
+                    <p>{{ order.shipping_city }}{% if order.shipping_state %}, {{ order.shipping_state }}{% endif %} {{ order.shipping_zip }}</p>
+                    <p>Phone: {{ order.shipping_phone }}</p>
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            {% if order.status == 'PENDING' or order.status == 'CONFIRMED' %}
+            <div class="mt-6 flex justify-end">
+                <button id="cancelOrderBtn" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition">
+                    Cancel Order
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    loadOrderTimeline();
+    
+    function loadOrderTimeline() {
+        $.ajax({
+            url: `/api/marketplace/orders/{{ order.id }}/track/`,
+            method: 'GET',
+            success: function(data) {
+                let timelineHtml = '<div class="space-y-4">';
+                data.history.forEach((event, index) => {
+                    timelineHtml += `
+                        <div class="flex items-start gap-4">
+                            <div class="flex flex-col items-center">
+                                <div class="w-8 h-8 rounded-full ${index === 0 ? 'bg-green-600' : 'bg-gray-300'} flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                                ${index < data.history.length - 1 ? '<div class="h-full w-0.5 bg-gray-300 my-1"></div>' : ''}
+                            </div>
+                            <div class="flex-1 pb-6">
+                                <p class="font-semibold">${event.status}</p>
+                                <p class="text-sm text-gray-600">${new Date(event.date).toLocaleString()}</p>
+                                <p class="text-sm text-gray-500">${event.description}</p>
+                            </div>
+                        </div>
+                    `;
+                });
+                timelineHtml += '</div>';
+                $('#orderTimeline').html(timelineHtml);
+            }
+        });
+    }
+    
+    $('#cancelOrderBtn').click(function() {
+        if (confirm('Are you sure you want to cancel this order?')) {
+            $.ajax({
+                url: `/api/marketplace/orders/{{ order.id }}/cancel/`,
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                success: function(response) {
+                    showToast(response.message, 'success');
+                    setTimeout(() => location.reload(), 1500);
+                },
+                error: function() {
+                    showToast('Failed to cancel order', 'error');
+                }
+            });
+        }
+    });
+    
+    function showToast(message, type) {
+        let bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
+        let toast = $(`<div class="fixed bottom-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50">${message}</div>`);
+        $('body').append(toast);
+        setTimeout(() => toast.fadeOut(300, function() { $(this).remove(); }), 3000);
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            let cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}

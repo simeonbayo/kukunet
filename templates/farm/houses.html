@@ -1,0 +1,620 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}House Management - KUKUNET{% endblock %}
+
+{% block content %}
+<div class="p-4">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800">
+                <i class="fas fa-building text-primary mr-2"></i>House Management
+            </h1>
+            <p class="text-sm text-gray-500 mt-1" id="farmName">Loading farm...</p>
+        </div>
+        <button onclick="openAddHouseModal()" class="bg-primary text-white px-4 py-2 rounded-xl text-sm">
+            <i class="fas fa-plus mr-1"></i>Add House
+        </button>
+    </div>
+
+    <!-- Houses Grid -->
+    <div id="housesGrid" class="grid grid-cols-1 gap-4 mb-6">
+        <div class="text-center py-8">
+            <div class="spinner mx-auto"></div>
+            <p class="text-gray-500 mt-2">Loading houses...</p>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-3 gap-4">
+        <div class="card text-center">
+            <i class="fas fa-building text-2xl text-primary"></i>
+            <p class="text-2xl font-bold mt-1" id="totalHouses">0</p>
+            <p class="text-xs text-gray-500">Total Houses</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-chicken text-2xl text-primary"></i>
+            <p class="text-2xl font-bold mt-1" id="totalCapacity">0</p>
+            <p class="text-xs text-gray-500">Total Capacity</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-percent text-2xl text-primary"></i>
+            <p class="text-2xl font-bold mt-1" id="avgOccupancy">0%</p>
+            <p class="text-xs text-gray-500">Avg Occupancy</p>
+        </div>
+    </div>
+</div>
+
+<!-- Add House Modal -->
+<div id="addHouseModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-screen overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">
+                    <i class="fas fa-plus-circle text-primary mr-2"></i>Add New House
+                </h2>
+                <button onclick="closeModal('addHouseModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="addHouseForm">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Farm</label>
+                    <select id="houseFarm" class="form-input" required>
+                        <option value="">Select Farm</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">House Number</label>
+                    <input type="text" id="houseNumber" class="form-input" placeholder="e.g., A1, House 1" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">House Name</label>
+                    <input type="text" id="houseName" class="form-input" placeholder="e.g., Layer House 1" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">House Type</label>
+                    <select id="houseType" class="form-input" required>
+                        <option value="OPEN">Open House</option>
+                        <option value="CLOSED">Closed House</option>
+                        <option value="BATTERY">Battery Cages</option>
+                        <option value="DEEP_LITTER">Deep Litter</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Capacity (Number of Birds)</label>
+                    <input type="number" id="houseCapacity" class="form-input" placeholder="Maximum birds" required>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div>
+                        <label class="block text-sm font-bold mb-2">Length (m)</label>
+                        <input type="number" step="0.01" id="houseLength" class="form-input" placeholder="Length">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-2">Width (m)</label>
+                        <input type="number" step="0.01" id="houseWidth" class="form-input" placeholder="Width">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Equipment</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="hasAutoFeeder" class="mr-2"> Automated Feeder
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="hasAutoDrinker" class="mr-2"> Automated Drinker
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="hasVentilation" class="mr-2"> Ventilation
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="hasHeating" class="mr-2"> Heating
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="hasLighting" class="mr-2"> Lighting
+                        </label>
+                    </div>
+                </div>
+                <button type="submit" class="btn-primary w-full">
+                    <i class="fas fa-save mr-2"></i>Save House
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit House Modal -->
+<div id="editHouseModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-screen overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">
+                    <i class="fas fa-edit text-primary mr-2"></i>Edit House
+                </h2>
+                <button onclick="closeModal('editHouseModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="editHouseForm">
+                {% csrf_token %}
+                <input type="hidden" id="editHouseId">
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">House Number</label>
+                    <input type="text" id="editHouseNumber" class="form-input" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">House Name</label>
+                    <input type="text" id="editHouseName" class="form-input" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">House Type</label>
+                    <select id="editHouseType" class="form-input" required>
+                        <option value="OPEN">Open House</option>
+                        <option value="CLOSED">Closed House</option>
+                        <option value="BATTERY">Battery Cages</option>
+                        <option value="DEEP_LITTER">Deep Litter</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Capacity</label>
+                    <input type="number" id="editHouseCapacity" class="form-input" required>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div>
+                        <label class="block text-sm font-bold mb-2">Length (m)</label>
+                        <input type="number" step="0.01" id="editHouseLength" class="form-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-2">Width (m)</label>
+                        <input type="number" step="0.01" id="editHouseWidth" class="form-input">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Equipment</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editHasAutoFeeder" class="mr-2"> Automated Feeder
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editHasAutoDrinker" class="mr-2"> Automated Drinker
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editHasVentilation" class="mr-2"> Ventilation
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editHasHeating" class="mr-2"> Heating
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editHasLighting" class="mr-2"> Lighting
+                        </label>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="editHouseActive" class="mr-2">
+                        <span class="text-sm font-bold">Active</span>
+                    </label>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 btn-primary">
+                        <i class="fas fa-save mr-2"></i>Update
+                    </button>
+                    <button type="button" onclick="deleteHouse()" class="flex-1 bg-red-600 text-white py-2 rounded-xl">
+                        <i class="fas fa-trash mr-2"></i>Delete
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Get farm ID from URL
+const urlParams = new URLSearchParams(window.location.search);
+const farmId = urlParams.get('farm_id');
+
+// Get CSRF token
+function getCSRFToken() {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === ('csrftoken' + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Load farms for dropdown
+function loadFarmsForDropdown() {
+    fetch('/api/v1/farms/farms/', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(farms => {
+        let options = '<option value="">Select Farm</option>';
+        farms.forEach(farm => {
+            options += `<option value="${farm.id}" ${farmId == farm.id ? 'selected' : ''} data-name="${farm.farm_name}">${farm.farm_name}</option>`;
+        });
+        $('#houseFarm').html(options);
+        
+        if (farmId) {
+            const farmName = $('#houseFarm option:selected').data('name');
+            $('#farmName').text(farmName);
+        } else {
+            $('#farmName').text('All Farms');
+        }
+    })
+    .catch(error => console.error('Error loading farms:', error));
+}
+
+// Load houses
+function loadHouses() {
+    let url = '/api/v1/farms/houses/';
+    if (farmId) {
+        url += `?farm=${farmId}`;
+    }
+    
+    fetch(url, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(houses => {
+        if (houses && Array.isArray(houses)) {
+            displayHouses(houses);
+            updateStats(houses);
+        } else {
+            displayHouses([]);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading houses:', error);
+        $('#housesGrid').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-2"></i>
+                <p class="text-gray-500">Error loading houses</p>
+                <button onclick="loadHouses()" class="btn-primary mt-3 text-sm py-2 px-4">
+                    <i class="fas fa-sync-alt mr-1"></i>Retry
+                </button>
+            </div>
+        `);
+    });
+}
+
+function displayHouses(houses) {
+    if (!houses || houses.length === 0) {
+        $('#housesGrid').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-building text-4xl text-gray-300 mb-2"></i>
+                <p class="text-gray-500">No houses yet</p>
+                <button onclick="openAddHouseModal()" class="btn-primary mt-3 text-sm py-2 px-4">
+                    <i class="fas fa-plus mr-1"></i>Add Your First House
+                </button>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = '';
+    houses.forEach(house => {
+        const occupancyRate = house.occupancy_rate || 0;
+        const occupancyColor = occupancyRate > 80 ? 'green' : (occupancyRate > 50 ? 'yellow' : 'red');
+        
+        html += `
+            <div class="card hover:shadow-md transition">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h3 class="font-bold text-lg">${escapeHtml(house.name)}</h3>
+                        <p class="text-sm text-gray-500">
+                            <i class="fas fa-hashtag mr-1"></i>${house.house_number} • ${house.house_type}
+                        </p>
+                        <p class="text-sm text-gray-500">
+                            <i class="fas fa-farm mr-1"></i>${house.farm_name}
+                        </p>
+                    </div>
+                    <span class="px-2 py-1 text-xs rounded-full ${house.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">
+                        ${house.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                </div>
+                <div class="grid grid-cols-3 gap-2 mb-3 text-center text-sm">
+                    <div>
+                        <span class="text-gray-500">Capacity</span>
+                        <p class="font-semibold">${house.capacity}</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Current</span>
+                        <p class="font-semibold">${house.current_population || 0}</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Occupancy</span>
+                        <p class="font-semibold text-${occupancyColor}-600">${Math.round(occupancyRate)}%</p>
+                    </div>
+                </div>
+                ${house.length_m && house.width_m ? `
+                <div class="text-sm text-gray-500 mb-3">
+                    <i class="fas fa-ruler-combined mr-1"></i>${house.length_m}m x ${house.width_m}m
+                </div>
+                ` : ''}
+                <div class="flex gap-2">
+                    <a href="/farm/house/${house.id}/" class="flex-1 bg-primary text-white py-2 rounded-xl text-sm text-center">
+                        <i class="fas fa-eye mr-1"></i>View Details
+                    </a>
+                    <button onclick="editHouse(${house.id})" class="flex-1 border border-primary text-primary py-2 rounded-xl text-sm">
+                        <i class="fas fa-edit mr-1"></i>Edit
+                    </button>
+                </div>
+            </div>
+        `;
+    });
+    $('#housesGrid').html(html);
+}
+
+function updateStats(houses) {
+    let totalHouses = houses.length;
+    let totalCapacity = 0;
+    let totalOccupancy = 0;
+    
+    houses.forEach(house => {
+        totalCapacity += house.capacity;
+        totalOccupancy += house.current_population || 0;
+    });
+    
+    const avgOccupancy = totalCapacity > 0 ? (totalOccupancy / totalCapacity) * 100 : 0;
+    
+    $('#totalHouses').text(totalHouses);
+    $('#totalCapacity').text(totalCapacity);
+    $('#avgOccupancy').text(Math.round(avgOccupancy) + '%');
+}
+
+// Add House Form
+$('#addHouseForm').on('submit', function(e) {
+    e.preventDefault();
+    showLoading();
+    
+    const formData = {
+        farm: parseInt($('#houseFarm').val()),
+        house_number: $('#houseNumber').val(),
+        name: $('#houseName').val(),
+        house_type: $('#houseType').val(),
+        capacity: parseInt($('#houseCapacity').val()),
+        length_m: $('#houseLength').val() ? parseFloat($('#houseLength').val()) : null,
+        width_m: $('#houseWidth').val() ? parseFloat($('#houseWidth').val()) : null,
+        has_automated_feeder: $('#hasAutoFeeder').is(':checked'),
+        has_automated_drinker: $('#hasAutoDrinker').is(':checked'),
+        has_ventilation: $('#hasVentilation').is(':checked'),
+        has_heating: $('#hasHeating').is(':checked'),
+        has_lighting: $('#hasLighting').is(':checked')
+    };
+    
+    fetch('/api/v1/farms/houses/', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(async response => {
+        if (response.status === 401) {
+            hideLoading();
+            showToast('Please login to create a house', 'error');
+            setTimeout(() => window.location.href = '/login/', 1500);
+            return;
+        }
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || `HTTP ${response.status}`);
+        return data;
+    })
+    .then(data => {
+        hideLoading();
+        if (data.id) {
+            showToast('House created successfully!');
+            closeModal('addHouseModal');
+            $('#addHouseForm')[0].reset();
+            loadHouses();
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showToast(error.message || 'Error creating house', 'error');
+    });
+});
+
+// Edit House
+let currentEditHouseId = null;
+
+function editHouse(houseId) {
+    currentEditHouseId = houseId;
+    
+    fetch(`/api/v1/farms/houses/${houseId}/`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(house => {
+        $('#editHouseId').val(house.id);
+        $('#editHouseNumber').val(house.house_number);
+        $('#editHouseName').val(house.name);
+        $('#editHouseType').val(house.house_type);
+        $('#editHouseCapacity').val(house.capacity);
+        $('#editHouseLength').val(house.length_m);
+        $('#editHouseWidth').val(house.width_m);
+        $('#editHasAutoFeeder').prop('checked', house.has_automated_feeder);
+        $('#editHasAutoDrinker').prop('checked', house.has_automated_drinker);
+        $('#editHasVentilation').prop('checked', house.has_ventilation);
+        $('#editHasHeating').prop('checked', house.has_heating);
+        $('#editHasLighting').prop('checked', house.has_lighting);
+        $('#editHouseActive').prop('checked', house.is_active);
+        
+        $('#editHouseModal').removeClass('hidden');
+    })
+    .catch(error => console.error('Error loading house:', error));
+}
+
+$('#editHouseForm').on('submit', function(e) {
+    e.preventDefault();
+    showLoading();
+    
+    const houseId = $('#editHouseId').val();
+    const formData = {
+        house_number: $('#editHouseNumber').val(),
+        name: $('#editHouseName').val(),
+        house_type: $('#editHouseType').val(),
+        capacity: parseInt($('#editHouseCapacity').val()),
+        length_m: $('#editHouseLength').val() ? parseFloat($('#editHouseLength').val()) : null,
+        width_m: $('#editHouseWidth').val() ? parseFloat($('#editHouseWidth').val()) : null,
+        has_automated_feeder: $('#editHasAutoFeeder').is(':checked'),
+        has_automated_drinker: $('#editHasAutoDrinker').is(':checked'),
+        has_ventilation: $('#editHasVentilation').is(':checked'),
+        has_heating: $('#editHasHeating').is(':checked'),
+        has_lighting: $('#editHasLighting').is(':checked'),
+        is_active: $('#editHouseActive').is(':checked')
+    };
+    
+    fetch(`/api/v1/farms/houses/${houseId}/`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || `HTTP ${response.status}`);
+        return data;
+    })
+    .then(data => {
+        hideLoading();
+        showToast('House updated successfully!');
+        closeModal('editHouseModal');
+        loadHouses();
+    })
+    .catch(error => {
+        hideLoading();
+        showToast(error.message || 'Error updating house', 'error');
+    });
+});
+
+function deleteHouse() {
+    const houseId = $('#editHouseId').val();
+    
+    if (confirm('Are you sure you want to delete this house? This action cannot be undone.')) {
+        showLoading();
+        
+        fetch(`/api/v1/farms/houses/${houseId}/`, {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            hideLoading();
+            if (response.status === 204 || response.ok) {
+                showToast('House deleted successfully!');
+                closeModal('editHouseModal');
+                loadHouses();
+            } else {
+                showToast('Error deleting house', 'error');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            showToast('Network error', 'error');
+        });
+    }
+}
+
+function openAddHouseModal() {
+    loadFarmsForDropdown();
+    $('#addHouseModal').removeClass('hidden');
+}
+
+function closeModal(modalId) {
+    $(`#${modalId}`).addClass('hidden');
+}
+
+function showLoading() {
+    if ($('#loadingOverlay').length) $('#loadingOverlay').removeClass('hidden');
+}
+
+function hideLoading() {
+    if ($('#loadingOverlay').length) $('#loadingOverlay').addClass('hidden');
+}
+
+function showToast(message, type = 'success') {
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+    const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+    const toast = $(`
+        <div class="fixed bottom-20 left-1/2 transform -translate-x-1/2 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in">
+            <i class="fas ${icon} mr-2"></i>${message}
+        </div>
+    `);
+    $('body').append(toast);
+    setTimeout(() => toast.fadeOut(300, () => toast.remove()), 3000);
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Initialize
+$(document).ready(function() {
+    loadFarmsForDropdown();
+    loadHouses();
+});
+</script>
+
+<style>
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, 10px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #2E7D32;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}

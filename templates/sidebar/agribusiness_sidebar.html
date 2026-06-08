@@ -1,0 +1,204 @@
+<!-- templates/sidebar/agribusiness_sidebar.html -->
+<nav class="mt-6">
+    <!-- Dashboard -->
+    <a href="{% url 'frontend:agribusiness_dashboard' %}" class="nav-item {% if active_nav == 'dashboard' %}active{% endif %}">
+        <i class="fas fa-tachometer-alt"></i>
+        <span>Dashboard</span>
+    </a>
+    
+    <!-- Products Section -->
+    <div class="nav-item" onclick="toggleSubmenu('productsMenu')">
+        <i class="fas fa-box"></i>
+        <span>Products</span>
+        <i class="fas fa-chevron-down ml-auto text-xs"></i>
+    </div>
+    <div id="productsMenu" class="hidden nav-submenu space-y-1">
+        <a href="{% url 'frontend:agribusiness_products' %}" class="nav-subitem">
+            <i class="fas fa-list mr-2 w-4"></i> All Products
+        </a>
+        <a href="{% url 'frontend:agribusiness_add_product' %}" class="nav-subitem">
+            <i class="fas fa-plus mr-2 w-4"></i> Add Product
+        </a>
+        <a href="{% url 'frontend:agribusiness_inventory' %}" class="nav-subitem">
+            <i class="fas fa-boxes mr-2 w-4"></i> Inventory
+        </a>
+        <a href="{% url 'frontend:agribusiness_price_list' %}" class="nav-subitem">
+            <i class="fas fa-tags mr-2 w-4"></i> Price List
+        </a>
+    </div>
+    
+    <!-- Orders Section -->
+    <a href="{% url 'frontend:agribusiness_orders' %}" class="nav-item {% if active_nav == 'orders' %}active{% endif %}">
+        <i class="fas fa-shopping-cart"></i>
+        <span>Orders</span>
+    </a>
+    
+    <!-- Customers Section -->
+    <div class="nav-item" onclick="toggleSubmenu('customersMenu')">
+        <i class="fas fa-users"></i>
+        <span>Customers</span>
+        <i class="fas fa-chevron-down ml-auto text-xs"></i>
+    </div>
+    <div id="customersMenu" class="hidden nav-submenu space-y-1">
+        <a href="#" class="nav-subitem" onclick="showToast('Customers feature coming soon!', 'info')">
+            <i class="fas fa-list mr-2 w-4"></i> All Customers
+        </a>
+        <a href="#" class="nav-subitem" onclick="showToast('Customer analytics coming soon!', 'info')">
+            <i class="fas fa-chart-line mr-2 w-4"></i> Customer Analytics
+        </a>
+    </div>
+    
+    <!-- Reports Section -->
+    <div class="nav-item" onclick="toggleSubmenu('reportsMenu')">
+        <i class="fas fa-chart-line"></i>
+        <span>Reports</span>
+        <i class="fas fa-chevron-down ml-auto text-xs"></i>
+    </div>
+    <div id="reportsMenu" class="hidden nav-submenu space-y-1">
+        <a href="#" class="nav-subitem" onclick="showToast('Sales report coming soon!', 'info')">
+            <i class="fas fa-chart-bar mr-2 w-4"></i> Sales Report
+        </a>
+        <a href="#" class="nav-subitem" onclick="showToast('Inventory report coming soon!', 'info')">
+            <i class="fas fa-boxes mr-2 w-4"></i> Inventory Report
+        </a>
+        <a href="#" class="nav-subitem" onclick="showToast('Orders report coming soon!', 'info')">
+            <i class="fas fa-shopping-cart mr-2 w-4"></i> Orders Report
+        </a>
+    </div>
+    
+    <!-- Settings Section -->
+    <div class="nav-item" onclick="toggleSubmenu('settingsMenu')">
+        <i class="fas fa-cog"></i>
+        <span>Settings</span>
+        <i class="fas fa-chevron-down ml-auto text-xs"></i>
+    </div>
+    <div id="settingsMenu" class="hidden nav-submenu space-y-1">
+        <a href="{% url 'frontend:profile' %}" class="nav-subitem">
+            <i class="fas fa-user mr-2 w-4"></i> My Profile
+        </a>
+        <a href="#" class="nav-subitem" onclick="showToast('Business settings coming soon!', 'info')">
+            <i class="fas fa-building mr-2 w-4"></i> Business Profile
+        </a>
+        <a href="#" class="nav-subitem" onclick="showToast('Team management coming soon!', 'info')">
+            <i class="fas fa-users mr-2 w-4"></i> Team Members
+        </a>
+        <a href="#" class="nav-subitem" onclick="showToast('Notification settings coming soon!', 'info')">
+            <i class="fas fa-bell mr-2 w-4"></i> Notifications
+        </a>
+    </div>
+    
+    <!-- Support Section -->
+    <div class="nav-item" onclick="toggleSubmenu('supportMenu')">
+        <i class="fas fa-headset"></i>
+        <span>Support</span>
+        <i class="fas fa-chevron-down ml-auto text-xs"></i>
+    </div>
+    <div id="supportMenu" class="hidden nav-submenu space-y-1">
+        <a href="#" class="nav-subitem" onclick="showToast('Help center coming soon!', 'info')">
+            <i class="fas fa-question-circle mr-2 w-4"></i> Help Center
+        </a>
+        <a href="#" class="nav-subitem" onclick="showToast('Contact support coming soon!', 'info')">
+            <i class="fas fa-envelope mr-2 w-4"></i> Contact Support
+        </a>
+        <a href="#" class="nav-subitem" onclick="showToast('Documentation coming soon!', 'info')">
+            <i class="fas fa-file-alt mr-2 w-4"></i> Documentation
+        </a>
+    </div>
+</nav>
+
+<!-- Additional CSS for submenu items -->
+<style>
+    .nav-submenu {
+        margin-left: 2.5rem;
+    }
+    
+    .nav-subitem {
+        display: block;
+        padding: 0.5rem 1rem;
+        font-size: 0.8125rem;
+        color: #cbd5e1;
+        transition: all 0.2s ease;
+        border-radius: 0.375rem;
+        text-decoration: none;
+    }
+    
+    .nav-subitem:hover {
+        color: white;
+        background: rgba(255, 255, 255, 0.05);
+        transform: translateX(4px);
+    }
+    
+    .nav-subitem i {
+        width: 1.25rem;
+        font-size: 0.75rem;
+    }
+    
+    .nav-subitem.active {
+        background: rgba(37, 99, 235, 0.2);
+        color: white;
+    }
+</style>
+
+<script>
+    // Show toast for coming soon features
+    function showToast(message, type) {
+        if (window.showToast) {
+            window.showToast(message, type);
+        } else {
+            alert(message);
+        }
+    }
+    
+    // Highlight active menu item based on current URL
+    document.addEventListener('DOMContentLoaded', function() {
+        const currentUrl = window.location.pathname;
+        
+        // Remove active class from all nav-items and nav-subitems
+        document.querySelectorAll('.nav-item, .nav-subitem').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        // Check for exact matches
+        if (currentUrl === '/agribusiness/' || currentUrl === '/agribusiness/dashboard/') {
+            const dashboardLink = document.querySelector('.nav-item[href*="agribusiness_dashboard"]');
+            if (dashboardLink) dashboardLink.classList.add('active');
+        }
+        
+        if (currentUrl === '/agribusiness/products/') {
+            const productsLink = document.querySelector('.nav-item[href*="agribusiness_products"]');
+            if (productsLink) productsLink.classList.add('active');
+            // Also highlight the submenu parent
+            const parentMenu = document.getElementById('productsMenu');
+            if (parentMenu) parentMenu.classList.remove('hidden');
+        }
+        
+        if (currentUrl === '/agribusiness/inventory/') {
+            const inventoryLink = document.querySelector('.nav-subitem[href*="agribusiness_inventory"]');
+            if (inventoryLink) inventoryLink.classList.add('active');
+            // Expand parent menu
+            const parentMenu = document.getElementById('productsMenu');
+            if (parentMenu) parentMenu.classList.remove('hidden');
+        }
+        
+        if (currentUrl === '/agribusiness/price-list/') {
+            const priceListLink = document.querySelector('.nav-subitem[href*="agribusiness_price_list"]');
+            if (priceListLink) priceListLink.classList.add('active');
+            // Expand parent menu
+            const parentMenu = document.getElementById('productsMenu');
+            if (parentMenu) parentMenu.classList.remove('hidden');
+        }
+        
+        if (currentUrl === '/agribusiness/orders/') {
+            const ordersLink = document.querySelector('.nav-item[href*="agribusiness_orders"]');
+            if (ordersLink) ordersLink.classList.add('active');
+        }
+        
+        if (currentUrl === '/profile/') {
+            const profileLink = document.querySelector('.nav-subitem[href*="profile"]');
+            if (profileLink) profileLink.classList.add('active');
+            // Expand settings menu
+            const parentMenu = document.getElementById('settingsMenu');
+            if (parentMenu) parentMenu.classList.remove('hidden');
+        }
+    });
+</script>

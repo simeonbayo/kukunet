@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+
+{% block title %}Organization Dashboard - KUKUNET{% endblock %}
+
+{% block content %}
+<div class="p-4">
+    <!-- Welcome Section -->
+    <div class="bg-gradient-to-r from-indigo-700 to-indigo-600 text-white rounded-2xl p-5 mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold">
+                    <i class="fas fa-building mr-2"></i>{{ user.organization_name }}
+                </h1>
+                <p class="opacity-90 mt-1">{{ user.get_organization_type_display|default:"Organization" }} Dashboard</p>
+            </div>
+            <div class="bg-white/20 rounded-full p-3">
+                <i class="fas fa-chart-line text-3xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="card text-center">
+            <i class="fas fa-users text-3xl text-indigo-600"></i>
+            <p class="text-2xl font-bold mt-2" id="totalFarmers">0</p>
+            <p class="text-gray-500 text-sm">Registered Farmers</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-chicken text-3xl text-indigo-600"></i>
+            <p class="text-2xl font-bold mt-2" id="totalBirds">0</p>
+            <p class="text-gray-500 text-sm">Total Birds</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-egg text-3xl text-indigo-600"></i>
+            <p class="text-2xl font-bold mt-2" id="dailyProduction">0</p>
+            <p class="text-gray-500 text-sm">Daily Production</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-chart-line text-3xl text-indigo-600"></i>
+            <p class="text-2xl font-bold mt-2" id="growth">0%</p>
+            <p class="text-gray-500 text-sm">Growth Rate</p>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-4 gap-3 mb-6">
+        <button onclick="window.location.href='/organization/farmers/add/'" class="bg-white p-3 rounded-xl text-center shadow-sm">
+            <i class="fas fa-user-plus text-indigo-600 text-xl"></i>
+            <p class="text-xs mt-1">Add Farmer</p>
+        </button>
+        <button onclick="window.location.href='/organization/farmers/import/'" class="bg-white p-3 rounded-xl text-center shadow-sm">
+            <i class="fas fa-file-import text-indigo-600 text-xl"></i>
+            <p class="text-xs mt-1">Import</p>
+        </button>
+        <button onclick="window.location.href='/organization/reports/'" class="bg-white p-3 rounded-xl text-center shadow-sm">
+            <i class="fas fa-chart-bar text-indigo-600 text-xl"></i>
+            <p class="text-xs mt-1">Reports</p>
+        </button>
+        <button onclick="window.location.href='/organization/settings/'" class="bg-white p-3 rounded-xl text-center shadow-sm">
+            <i class="fas fa-cog text-indigo-600 text-xl"></i>
+            <p class="text-xs mt-1">Settings</p>
+        </button>
+    </div>
+
+    <!-- Farmers List -->
+    <div>
+        <h2 class="text-lg font-bold mb-3">Recent Farmers</h2>
+        <div id="farmersList" class="space-y-2"></div>
+    </div>
+</div>
+
+<script>
+function loadDashboardData() {
+    loadFarmers();
+    loadStats();
+}
+
+function loadStats() {
+    $.ajax({
+        url: '/api/v1/organization/farmers/stats/',
+        success: function(data) {
+            $('#totalFarmers').text(data.total_farmers);
+            $('#totalBirds').text(data.total_birds);
+            $('#dailyProduction').text(data.daily_eggs);
+            $('#growth').text(data.growth_rate);
+        }
+    });
+}
+
+function loadFarmers() {
+    $.ajax({
+        url: '/api/v1/organization/farmers/list/',
+        success: function(data) {
+            displayFarmers(data.farmers.slice(0, 5));
+        }
+    });
+}
+</script>
+{% endblock %}

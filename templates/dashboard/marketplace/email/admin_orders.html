@@ -1,0 +1,263 @@
+<!-- templates/marketplace/admin_orders.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Order Management - Admin{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">Order Management</h1>
+        
+        <!-- Filters -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <select id="statusFilter" class="w-full border border-gray-300 rounded-lg px-4 py-2">
+                    <option value="">All</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="CONFIRMED">Confirmed</option>
+                    <option value="PROCESSING">Processing</option>
+                    <option value="SHIPPED">Shipped</option>
+                    <option value="DELIVERED">Delivered</option>
+                    <option value="CANCELLED">Cancelled</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                <input type="date" id="startDate" class="w-full border border-gray-300 rounded-lg px-4 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                <input type="date" id="endDate" class="w-full border border-gray-300 rounded-lg px-4 py-2">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                <input type="text" id="searchOrder" placeholder="Order # or Email" class="w-full border border-gray-300 rounded-lg px-4 py-2">
+            </div>
+        </div>
+        
+        <!-- Orders Table -->
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order #</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="ordersTableBody" class="bg-white divide-y divide-gray-200">
+                    <tr>
+                        <td colspan="6" class="px-6 py-4 text-center text-gray-500">Loading orders...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        <div id="pagination" class="mt-6 flex justify-between items-center">
+            <!-- Pagination will be added here -->
+        </div>
+    </div>
+</div>
+
+<!-- Update Status Modal -->
+<div id="statusModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg max-w-md w-full p-6">
+            <h2 class="text-xl font-bold mb-4">Update Order Status</h2>
+            <form id="updateStatusForm">
+                <input type="hidden" id="orderId">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">New Status</label>
+                    <select id="newStatus" class="w-full border border-gray-300 rounded-lg px-4 py-2" required>
+                        <option value="PENDING">Pending</option>
+                        <option value="CONFIRMED">Confirmed</option>
+                        <option value="PROCESSING">Processing</option>
+                        <option value="SHIPPED">Shipped</option>
+                        <option value="DELIVERED">Delivered</option>
+                        <option value="CANCELLED">Cancelled</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Admin Notes</label>
+                    <textarea id="adminNotes" rows="3" class="w-full border border-gray-300 rounded-lg px-4 py-2"></textarea>
+                </div>
+                <div class="flex gap-4">
+                    <button type="button" id="closeModal" class="flex-1 bg-gray-300 text-gray-700 py-2 rounded-lg hover:bg-gray-400">Cancel</button>
+                    <button type="submit" class="flex-1 bg-green-600 text-white py-2 rounded-lg hover:bg-green-700">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+$(document).ready(function() {
+    let currentPage = 1;
+    loadOrders();
+    
+    $('#statusFilter, #startDate, #endDate, #searchOrder').on('change keyup', function() {
+        currentPage = 1;
+        loadOrders();
+    });
+    
+    function loadOrders() {
+        let params = {
+            page: currentPage,
+            status: $('#statusFilter').val(),
+            start_date: $('#startDate').val(),
+            end_date: $('#endDate').val(),
+            search: $('#searchOrder').val()
+        };
+        
+        $.ajax({
+            url: `/api/marketplace/admin/orders/?${$.param(params)}`,
+            method: 'GET',
+            success: function(response) {
+                displayOrders(response.results);
+                displayPagination(response);
+            },
+            error: function() {
+                $('#ordersTableBody').html('<tr><td colspan="6" class="px-6 py-4 text-center text-red-600">Failed to load orders</td></tr>');
+            }
+        });
+    }
+    
+    function displayOrders(orders) {
+        if (!orders || orders.length === 0) {
+            $('#ordersTableBody').html('<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">No orders found</td></tr>');
+            return;
+        }
+        
+        let html = '';
+        orders.forEach(order => {
+            let statusColor = {
+                'PENDING': 'bg-yellow-100 text-yellow-800',
+                'CONFIRMED': 'bg-blue-100 text-blue-800',
+                'PROCESSING': 'bg-purple-100 text-purple-800',
+                'SHIPPED': 'bg-indigo-100 text-indigo-800',
+                'DELIVERED': 'bg-green-100 text-green-800',
+                'CANCELLED': 'bg-red-100 text-red-800'
+            }[order.status] || 'bg-gray-100 text-gray-800';
+            
+            html += `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap font-medium">${order.order_number}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${order.user_name || order.user.email}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">${new Date(order.created_at).toLocaleDateString()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap font-semibold">$${parseFloat(order.total).toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 rounded-full text-xs ${statusColor}">${order.status_display}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <button onclick="viewOrder(${order.id})" class="text-blue-600 hover:text-blue-800 mr-3">View</button>
+                        <button onclick="openStatusModal(${order.id})" class="text-green-600 hover:text-green-800">Update</button>
+                    </td>
+                </tr>
+            `;
+        });
+        $('#ordersTableBody').html(html);
+    }
+    
+    function displayPagination(data) {
+        if (data.total_pages <= 1) {
+            $('#pagination').empty();
+            return;
+        }
+        
+        let html = '<div class="flex gap-2">';
+        if (data.has_previous) {
+            html += `<button onclick="goToPage(${data.previous_page_number})" class="px-3 py-1 border rounded hover:bg-gray-50">Previous</button>`;
+        }
+        
+        for (let i = 1; i <= data.total_pages; i++) {
+            if (i === data.current_page) {
+                html += `<button class="px-3 py-1 bg-green-600 text-white rounded">${i}</button>`;
+            } else if (Math.abs(i - data.current_page) <= 2) {
+                html += `<button onclick="goToPage(${i})" class="px-3 py-1 border rounded hover:bg-gray-50">${i}</button>`;
+            }
+        }
+        
+        if (data.has_next) {
+            html += `<button onclick="goToPage(${data.next_page_number})" class="px-3 py-1 border rounded hover:bg-gray-50">Next</button>`;
+        }
+        html += '</div>';
+        $('#pagination').html(html);
+    }
+    
+    window.goToPage = function(page) {
+        currentPage = page;
+        loadOrders();
+    };
+    
+    window.viewOrder = function(orderId) {
+        window.location.href = `/admin/orders/${orderId}/`;
+    };
+    
+    window.openStatusModal = function(orderId) {
+        $('#orderId').val(orderId);
+        $('#statusModal').removeClass('hidden');
+    };
+    
+    $('#updateStatusForm').submit(function(e) {
+        e.preventDefault();
+        let orderId = $('#orderId').val();
+        let newStatus = $('#newStatus').val();
+        let adminNotes = $('#adminNotes').val();
+        
+        $.ajax({
+            url: `/api/marketplace/admin/orders/${orderId}/update_status/`,
+            method: 'POST',
+            contentType: 'application/json',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            data: JSON.stringify({
+                status: newStatus,
+                admin_notes: adminNotes
+            }),
+            success: function(response) {
+                showToast(response.message, 'success');
+                $('#statusModal').addClass('hidden');
+                loadOrders();
+                $('#adminNotes').val('');
+            },
+            error: function() {
+                showToast('Failed to update status', 'error');
+            }
+        });
+    });
+    
+    $('#closeModal').click(function() {
+        $('#statusModal').addClass('hidden');
+    });
+    
+    function showToast(message, type) {
+        let bgColor = type === 'success' ? 'bg-green-600' : 'bg-red-600';
+        let toast = $(`<div class="fixed bottom-4 right-4 ${bgColor} text-white px-6 py-3 rounded-lg shadow-lg z-50">${message}</div>`);
+        $('body').append(toast);
+        setTimeout(() => toast.fadeOut(300, function() { $(this).remove(); }), 3000);
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            let cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}

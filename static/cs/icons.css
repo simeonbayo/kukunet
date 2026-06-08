@@ -1,0 +1,86 @@
+/* static/css/icons.css */
+/* Font Awesome Custom Styles for KUKUNET */
+
+/* Icon animations */
+.icon-spin {
+    animation: fa-spin 2s infinite linear;
+}
+
+.icon-pulse {
+    animation: fa-spin 1s infinite steps(8);
+}
+
+.icon-bounce {
+    animation: bounce 1s ease infinite;
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+.icon-shake {
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+}
+
+/* Icon backgrounds */
+.icon-circle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(46, 125, 50, 0.1);
+}
+
+.icon-circle-lg {
+    width: 60px;
+    height: 60px;
+}
+
+.icon-circle-sm {
+    width: 30px;
+    height: 30px;
+}
+
+/* Icon with badge */
+.icon-badge {
+    position: relative;
+    display: inline-block;
+}
+
+.icon-badge .badge {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: #F44336;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+/* Social icon colors */
+.fa-facebook { color: #1877F2; }
+.fa-twitter { color: #1DA1F2; }
+.fa-instagram { color: #E4405F; }
+.fa-whatsapp { color: #25D366; }
+.fa-telegram { color: #0088CC; }
+.fa-youtube { color: #FF0000; }
+.fa-linkedin { color: #0077B5; }
+.fa-github { color: #333; }
+
+/* Payment icon colors */
+.fa-cc-visa { color: #1A1F71; }
+.fa-cc-mastercard { color: #EB001B; }
+.fa-paypal { color: #003087; }
+.fa-mobile-alt { color: #6B7280; }
+.fa-money-bill-wave { color: #10B981; }

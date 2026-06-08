@@ -1,0 +1,66 @@
+<!-- templates/marketplace/email/order_confirmation.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #4CAF50; color: white; padding: 20px; text-align: center; }
+        .order-details { margin: 20px 0; padding: 20px; background: #f9f9f9; }
+        .total { font-size: 18px; font-weight: bold; color: #4CAF50; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Order Confirmation</h1>
+            <p>Order #{{ order.order_number }}</p>
+        </div>
+        
+        <p>Dear {{ user.get_full_name }},</p>
+        <p>Thank you for your order! Your order has been received and is being processed.</p>
+        
+        <div class="order-details">
+            <h3>Order Summary</h3>
+            <table>
+                <tr>
+                    <th>Item</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                    <th>Subtotal</th>
+                </tr>
+                {% for item in order.items.all %}
+                <tr>
+                    <td>{{ item.product.name }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>${{ item.price }}</td>
+                    <td>${{ item.subtotal }}</td>
+                </tr>
+                {% endfor %}
+            </table>
+            
+            <p><strong>Subtotal:</strong> ${{ order.subtotal }}</p>
+            <p><strong>Shipping:</strong> ${{ order.shipping_cost }}</p>
+            <p><strong>Tax:</strong> ${{ order.tax }}</p>
+            {% if order.discount > 0 %}
+            <p><strong>Discount:</strong> -${{ order.discount }}</p>
+            {% endif %}
+            <p class="total"><strong>Total:</strong> ${{ order.total }}</p>
+        </div>
+        
+        <div>
+            <h3>Shipping Address</h3>
+            <p>{{ order.shipping_address }}<br>
+            {{ order.shipping_city }}, {{ order.shipping_state }} {{ order.shipping_zip }}<br>
+            Phone: {{ order.shipping_phone }}</p>
+        </div>
+        
+        <p>You can track your order status by logging into your account.</p>
+        
+        <p>Thank you for shopping with us!</p>
+        <p>Best regards,<br>Farm Management System Team</p>
+    </div>
+</body>
+</html>

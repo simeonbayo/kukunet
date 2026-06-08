@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Trainer Dashboard - KUKUNET{% endblock %}
+
+{% block content %}
+<div class="p-4">
+    <!-- Welcome Section -->
+    <div class="bg-gradient-to-r from-purple-700 to-purple-600 text-white rounded-2xl p-5 mb-6">
+        <h1 class="text-2xl font-bold">📚 Welcome, Trainer {{ user.full_name }}!</h1>
+        <p class="opacity-90 mt-1">Share your knowledge with farmers</p>
+        <p class="text-sm mt-2">{{ today|date:"l, F j, Y" }}</p>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-2 gap-4 mb-6">
+        <div class="card text-center">
+            <i class="fas fa-video text-3xl text-purple-600"></i>
+            <p class="text-2xl font-bold mt-2">0</p>
+            <p class="text-gray-500 text-sm">My Courses</p>
+        </div>
+        <div class="card text-center">
+            <i class="fas fa-users text-3xl text-purple-600"></i>
+            <p class="text-2xl font-bold mt-2">0</p>
+            <p class="text-gray-500 text-sm">Students</p>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="mb-6">
+        <h2 class="text-lg font-bold mb-3">Quick Actions</h2>
+        <div class="grid grid-cols-2 gap-3">
+            <button class="bg-white p-3 rounded-xl text-center shadow-sm">
+                <i class="fas fa-plus-circle text-purple-600 text-xl"></i>
+                <p class="text-xs mt-1">Create Course</p>
+            </button>
+            <button class="bg-white p-3 rounded-xl text-center shadow-sm">
+                <i class="fas fa-upload text-purple-600 text-xl"></i>
+                <p class="text-xs mt-1">Upload Content</p>
+            </button>
+        </div>
+    </div>
+    
+    <!-- My Courses -->
+    <div>
+        <h2 class="text-lg font-bold mb-3">My Courses</h2>
+        <div class="card">
+            <p class="text-gray-500 text-center py-4">No courses created yet</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,431 @@
+<!-- templates/shop/order_detail.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Order #{{ order.order_number }} - KUKUNET{% endblock %}
+
+{% block extra_css %}
+<style>
+    .order-container {
+        max-width: 100%;
+        padding: 1rem;
+        background: #f8fafc;
+        min-height: 100vh;
+    }
+    
+    .order-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .order-card h2 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    
+    .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .order-number {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+    
+    .order-status {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-confirmed { background: #dbeafe; color: #1e40af; }
+    .status-processing { background: #e0e7ff; color: #3730a3; }
+    .status-shipped { background: #cffafe; color: #155e75; }
+    .status-delivered { background: #d1fae5; color: #065f46; }
+    .status-cancelled { background: #fee2e2; color: #991b1b; }
+    
+    .order-date {
+        font-size: 0.875rem;
+        color: #64748b;
+    }
+    
+    /* Order Items */
+    .order-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .order-item:last-child {
+        border-bottom: none;
+    }
+    
+    .order-item-info {
+        flex: 1;
+    }
+    
+    .order-item-title {
+        font-weight: 600;
+        font-size: 0.9375rem;
+        color: #1e293b;
+    }
+    
+    .order-item-quantity {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin-top: 0.25rem;
+    }
+    
+    .order-item-price {
+        font-weight: 600;
+        font-size: 0.9375rem;
+        color: #2E7D32;
+        text-align: right;
+    }
+    
+    /* Summary Rows */
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        font-size: 0.875rem;
+    }
+    
+    .summary-row.total {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1e293b;
+        border-top: 2px solid #e2e8f0;
+        margin-top: 0.5rem;
+        padding-top: 0.75rem;
+    }
+    
+    /* Shipping Info */
+    .shipping-info {
+        background: #f8fafc;
+        border-radius: 0.75rem;
+        padding: 1rem;
+    }
+    
+    .shipping-info p {
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .shipping-info strong {
+        color: #1e293b;
+    }
+    
+    .tracking-timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+    }
+    
+    .timeline-item:before {
+        content: '';
+        position: absolute;
+        left: -1.5rem;
+        top: 0;
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 50%;
+        background: #2E7D32;
+    }
+    
+    .timeline-item:after {
+        content: '';
+        position: absolute;
+        left: -1.125rem;
+        top: 0.75rem;
+        width: 0.125rem;
+        height: calc(100% - 0.75rem);
+        background: #e2e8f0;
+    }
+    
+    .timeline-item:last-child:after {
+        display: none;
+    }
+    
+    .timeline-status {
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #1e293b;
+    }
+    
+    .timeline-date {
+        font-size: 0.75rem;
+        color: #64748b;
+    }
+    
+    .continue-shopping {
+        display: inline-block;
+        background: #2E7D32;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 2rem;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+    }
+    
+    .continue-shopping:hover {
+        background: #1B5E20;
+    }
+    
+    @media (min-width: 768px) {
+        .order-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .order-layout {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 1.5rem;
+        }
+    }
+    
+    @media (max-width: 767px) {
+        .order-layout {
+            display: flex;
+            flex-direction: column;
+        }
+        .order-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="order-container">
+    <div class="order-layout">
+        <!-- Left Column - Order Details -->
+        <div>
+            <!-- Order Header -->
+            <div class="order-card">
+                <div class="order-header">
+                    <div>
+                        <div class="order-number">Order #{{ order.order_number }}</div>
+                        <div class="order-date">Placed on {{ order.created_at|date:"F j, Y" }} at {{ order.created_at|date:"g:i A" }}</div>
+                    </div>
+                    <div>
+                        {% if order.status == 'PENDING' %}
+                            <span class="order-status status-pending">Pending Payment</span>
+                        {% elif order.status == 'CONFIRMED' %}
+                            <span class="order-status status-confirmed">Confirmed</span>
+                        {% elif order.status == 'PROCESSING' %}
+                            <span class="order-status status-processing">Processing</span>
+                        {% elif order.status == 'SHIPPED' %}
+                            <span class="order-status status-shipped">Shipped</span>
+                        {% elif order.status == 'DELIVERED' %}
+                            <span class="order-status status-delivered">Delivered</span>
+                        {% elif order.status == 'CANCELLED' %}
+                            <span class="order-status status-cancelled">Cancelled</span>
+                        {% else %}
+                            <span class="order-status status-pending">{{ order.status }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Order Items -->
+            <div class="order-card">
+                <h2>Order Items</h2>
+                {% for item in order.items.all %}
+                <div class="order-item">
+                    <div class="order-item-info">
+                        <div class="order-item-title">{{ item.product.name }}</div>
+                        <div class="order-item-quantity">Quantity: {{ item.quantity }}</div>
+                    </div>
+                    <div class="order-item-price">UGX {{ item.subtotal|floatformat:0 }}</div>
+                </div>
+                {% empty %}
+                <p class="text-gray-500 text-center py-4">No items found</p>
+                {% endfor %}
+            </div>
+            
+            <!-- Order Timeline -->
+            <div class="order-card">
+                <h2>Order Timeline</h2>
+                <div class="tracking-timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-status">Order Placed</div>
+                        <div class="timeline-date">{{ order.created_at|date:"F j, Y" }}</div>
+                    </div>
+                    {% if order.paid_at %}
+                    <div class="timeline-item">
+                        <div class="timeline-status">Payment Confirmed</div>
+                        <div class="timeline-date">{{ order.paid_at|date:"F j, Y" }}</div>
+                    </div>
+                    {% endif %}
+                    {% if order.status == 'SHIPPED' or order.status == 'DELIVERED' %}
+                    <div class="timeline-item">
+                        <div class="timeline-status">Order Shipped</div>
+                        <div class="timeline-date">{{ order.updated_at|date:"F j, Y" }}</div>
+                    </div>
+                    {% endif %}
+                    {% if order.status == 'DELIVERED' %}
+                    <div class="timeline-item">
+                        <div class="timeline-status">Order Delivered</div>
+                        <div class="timeline-date">{{ order.delivered_at|date:"F j, Y"|default:order.updated_at|date:"F j, Y" }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Column - Order Summary & Shipping -->
+        <div>
+            <!-- Order Summary -->
+            <div class="order-card">
+                <h2>Order Summary</h2>
+                <div class="summary-row">
+                    <span>Subtotal:</span>
+                    <span>UGX {{ order.subtotal|floatformat:0 }}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Tax (10%):</span>
+                    <span>UGX {{ order.tax|floatformat:0 }}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Shipping:</span>
+                    <span>UGX {{ order.shipping_cost|floatformat:0 }}</span>
+                </div>
+                {% if order.discount > 0 %}
+                <div class="summary-row">
+                    <span>Discount:</span>
+                    <span>-UGX {{ order.discount|floatformat:0 }}</span>
+                </div>
+                {% endif %}
+                <div class="summary-row total">
+                    <span>Total:</span>
+                    <span>UGX {{ order.total|floatformat:0 }}</span>
+                </div>
+            </div>
+            
+            <!-- Shipping Information -->
+            <div class="order-card">
+                <h2>Shipping Information</h2>
+                <div class="shipping-info">
+                    <p><strong>{{ order.user.full_name|default:order.user.phone_number }}</strong></p>
+                    <p>{{ order.shipping_address }}</p>
+                    <p>{{ order.shipping_city }}{% if order.shipping_state %}, {{ order.shipping_state }}{% endif %}</p>
+                    <p>{{ order.shipping_phone }}</p>
+                    {% if order.customer_notes %}
+                    <p class="mt-2"><strong>Notes:</strong> {{ order.customer_notes }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Payment Method -->
+            <div class="order-card">
+                <h2>Payment Method</h2>
+                <p>
+                    {% if order.payment_method == 'CASH' %}
+                        <i class="fas fa-money-bill-wave text-green-600 mr-2"></i> Cash on Delivery
+                    {% elif order.payment_method == 'MOBILE_MONEY' %}
+                        <i class="fas fa-mobile-alt text-green-600 mr-2"></i> Mobile Money
+                    {% elif order.payment_method == 'BANK_TRANSFER' %}
+                        <i class="fas fa-university text-green-600 mr-2"></i> Bank Transfer
+                    {% else %}
+                        {{ order.payment_method }}
+                    {% endif %}
+                </p>
+                <p class="text-sm text-gray-500 mt-2">
+                    Payment Status: 
+                    {% if order.payment_status == 'PAID' %}
+                        <span class="text-green-600">Paid</span>
+                    {% else %}
+                        <span class="text-yellow-600">Pending</span>
+                    {% endif %}
+                </p>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="order-card">
+                {% if order.status == 'PENDING' or order.status == 'CONFIRMED' %}
+                <button onclick="cancelOrder({{ order.id }})" class="w-full bg-red-600 text-white py-3 rounded-lg font-semibold hover:bg-red-700 transition mb-3">
+                    Cancel Order
+                </button>
+                {% endif %}
+                <a href="/shop/" class="continue-shopping w-full text-center block">
+                    Continue Shopping →
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function cancelOrder(orderId) {
+        if (confirm('Are you sure you want to cancel this order?')) {
+            $.ajax({
+                url: `/api/v1/orders/${orderId}/cancel/`,
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                },
+                success: function(response) {
+                    showToast(response.message || 'Order cancelled successfully', 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                },
+                error: function(xhr) {
+                    let error = xhr.responseJSON?.error || 'Failed to cancel order';
+                    showToast(error, 'error');
+                }
+            });
+        }
+    }
+    
+    function showToast(message, type) {
+        let bgColor = type === 'success' ? '#059669' : '#dc2626';
+        let toast = $(`<div style="position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:${bgColor};color:white;padding:0.75rem 1.5rem;border-radius:2rem;z-index:1100;font-size:0.875rem;box-shadow:0 4px 12px rgba(0,0,0,0.15);">${message}</div>`);
+        $('body').append(toast);
+        setTimeout(() => toast.fadeOut(300, () => toast.remove()), 3000);
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            let cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %}

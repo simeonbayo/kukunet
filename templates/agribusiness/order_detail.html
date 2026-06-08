@@ -1,0 +1,405 @@
+<!-- templates/agribusiness/order_detail.html -->
+{% extends 'base_org_admin.html' %}
+{% load static %}
+
+{% block title %}Order #{{ order.order_number }} - Agribusiness{% endblock %}
+
+{% block page_title %}Order Details{% endblock %}
+
+{% block breadcrumb %}
+<p class="text-xs text-gray-500 mt-0.5">View and manage order #{{ order.order_number }}</p>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-confirmed { background: #dbeafe; color: #1e40af; }
+    .status-processing { background: #e0e7ff; color: #3730a3; }
+    .status-shipped { background: #cffafe; color: #155e75; }
+    .status-delivered { background: #d1fae5; color: #065f46; }
+    .status-cancelled { background: #fee2e2; color: #991b1b; }
+    
+    .info-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .info-card h3 {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    
+    .order-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .order-item:last-child {
+        border-bottom: none;
+    }
+    
+    .order-item-info {
+        flex: 1;
+    }
+    
+    .order-item-title {
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #1e293b;
+    }
+    
+    .order-item-price {
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #2E7D32;
+    }
+    
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        font-size: 0.875rem;
+    }
+    
+    .summary-row.total {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1e293b;
+        border-top: 2px solid #e2e8f0;
+        margin-top: 0.5rem;
+        padding-top: 0.75rem;
+    }
+    
+    .btn-back {
+        background: #6b7280;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .btn-back:hover {
+        background: #4b5563;
+    }
+    
+    .btn-update {
+        background: #2E7D32;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        border: none;
+        cursor: pointer;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .btn-update:hover {
+        background: #1B5E20;
+    }
+    
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #e2e8f0;
+        border-top-color: #2E7D32;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    @media (max-width: 768px) {
+        .info-card {
+            padding: 1rem;
+        }
+        .order-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+        .order-item-price {
+            align-self: flex-end;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{% url 'frontend:agribusiness_orders' %}" class="btn-back">
+        <i class="fas fa-arrow-left"></i> Back to Orders
+    </a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Main Content - Order Items -->
+    <div class="lg:col-span-2">
+        <div class="info-card">
+            <h3>Order Items</h3>
+            <div id="orderItemsList">
+                {% for item in order.items.all %}
+                <div class="order-item">
+                    <div class="order-item-info">
+                        <div class="order-item-title">{{ item.product.name }}</div>
+                        <div class="text-sm text-gray-500">Quantity: {{ item.quantity }}</div>
+                    </div>
+                    <div class="order-item-price">UGX {{ item.price|floatformat:0 }}</div>
+                </div>
+                {% empty %}
+                <div class="text-center py-8 text-gray-500">No items found</div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="info-card">
+            <h3>Order Timeline</h3>
+            <div id="orderTimeline">
+                <div class="space-y-4">
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-check text-white text-xs"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-sm">Order Placed</p>
+                            <p class="text-xs text-gray-500">{{ order.created_at|date:"M d, Y H:i" }}</p>
+                        </div>
+                    </div>
+                    {% if order.paid_at %}
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-check text-white text-xs"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-sm">Payment Confirmed</p>
+                            <p class="text-xs text-gray-500">{{ order.paid_at|date:"M d, Y H:i" }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if order.status == 'CONFIRMED' or order.status == 'PROCESSING' or order.status == 'SHIPPED' or order.status == 'DELIVERED' %}
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-check text-white text-xs"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-sm">Order Confirmed</p>
+                            <p class="text-xs text-gray-500">{{ order.updated_at|date:"M d, Y H:i" }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if order.status == 'PROCESSING' or order.status == 'SHIPPED' or order.status == 'DELIVERED' %}
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-check text-white text-xs"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-sm">Processing</p>
+                            <p class="text-xs text-gray-500">{{ order.updated_at|date:"M d, Y H:i" }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if order.status == 'SHIPPED' or order.status == 'DELIVERED' %}
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-check text-white text-xs"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-sm">Order Shipped</p>
+                            <p class="text-xs text-gray-500">{{ order.updated_at|date:"M d, Y H:i" }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if order.status == 'DELIVERED' %}
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-green-600 flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-check text-white text-xs"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-sm">Order Delivered</p>
+                            <p class="text-xs text-gray-500">{{ order.delivered_at|date:"M d, Y H:i"|default:order.updated_at|date:"M d, Y H:i" }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if order.status == 'CANCELLED' %}
+                    <div class="flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-times text-white text-xs"></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-sm">Order Cancelled</p>
+                            <p class="text-xs text-gray-500">{{ order.updated_at|date:"M d, Y H:i" }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sidebar - Order Summary & Customer Info -->
+    <div class="lg:col-span-1">
+        <div class="info-card">
+            <h3>Order Summary</h3>
+            <div>
+                <div class="summary-row">
+                    <span>Subtotal:</span>
+                    <span>UGX {{ order.subtotal|floatformat:0 }}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Tax (10%):</span>
+                    <span>UGX {{ order.tax|floatformat:0 }}</span>
+                </div>
+                <div class="summary-row">
+                    <span>Shipping:</span>
+                    <span>UGX {{ order.shipping_cost|floatformat:0 }}</span>
+                </div>
+                {% if order.discount > 0 %}
+                <div class="summary-row">
+                    <span>Discount:</span>
+                    <span>-UGX {{ order.discount|floatformat:0 }}</span>
+                </div>
+                {% endif %}
+                <div class="summary-row total">
+                    <span>Total:</span>
+                    <span>UGX {{ order.total|floatformat:0 }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="info-card">
+            <h3>Customer Information</h3>
+            <div class="space-y-3">
+                <div>
+                    <p class="text-sm text-gray-500">Customer Name</p>
+                    <p class="font-medium">{{ order.user.full_name|default:order.user.phone_number|default:'Anonymous' }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Phone Number</p>
+                    <p class="font-medium">{{ order.user.phone_number|default:'N/A' }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Shipping Address</p>
+                    <p class="font-medium">{{ order.shipping_address|default:'N/A' }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">City/Town</p>
+                    <p class="font-medium">{{ order.shipping_city|default:'N/A' }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Payment Method</p>
+                    <p class="font-medium">{{ order.get_payment_method_display|default:order.payment_method }}</p>
+                </div>
+                {% if order.customer_notes %}
+                <div>
+                    <p class="text-sm text-gray-500">Order Notes</p>
+                    <p class="font-medium text-sm">{{ order.customer_notes }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="info-card">
+            <h3>Update Status</h3>
+            <div class="mb-4">
+                <select id="orderStatus" class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                    <option value="PENDING" {% if order.status == 'PENDING' %}selected{% endif %}>Pending</option>
+                    <option value="CONFIRMED" {% if order.status == 'CONFIRMED' %}selected{% endif %}>Confirmed</option>
+                    <option value="PROCESSING" {% if order.status == 'PROCESSING' %}selected{% endif %}>Processing</option>
+                    <option value="SHIPPED" {% if order.status == 'SHIPPED' %}selected{% endif %}>Shipped</option>
+                    <option value="DELIVERED" {% if order.status == 'DELIVERED' %}selected{% endif %}>Delivered</option>
+                    <option value="CANCELLED" {% if order.status == 'CANCELLED' %}selected{% endif %}>Cancelled</option>
+                </select>
+            </div>
+            <button onclick="updateOrderStatus()" class="btn-update w-full">
+                <i class="fas fa-save"></i> Update Status
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateOrderStatus() {
+        var newStatus = $('#orderStatus').val();
+        var $btn = $('.btn-update');
+        
+        $btn.prop('disabled', true).html('<div class="loading-spinner"></div> Updating...');
+        
+        $.ajax({
+            url: '/api/v1/agribusiness/{{ order_id }}/update_order_status/',
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({ status: newStatus }),
+            success: function(response) {
+                if (window.showToastMessage) {
+                    window.showToastMessage(response.message || 'Order status updated', 'success');
+                } else {
+                    alert(response.message || 'Order status updated');
+                }
+                setTimeout(function() {
+                    location.reload();
+                }, 1500);
+            },
+            error: function(xhr) {
+                var errorMsg = xhr.responseJSON?.error || 'Failed to update status';
+                if (window.showToastMessage) {
+                    window.showToastMessage(errorMsg, 'error');
+                } else {
+                    alert(errorMsg);
+                }
+                $btn.prop('disabled', false).html('<i class="fas fa-save"></i> Update Status');
+            }
+        });
+    }
+    
+    function getCookie(name) {
+        var value = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    value = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return value;
+    }
+    
+    // Toast message function (non-recursive)
+    window.showToastMessage = function(message, type) {
+        var bgColor = type === 'success' ? '#059669' : '#dc2626';
+        var toast = $('<div style="position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:' + bgColor + ';color:white;padding:0.75rem 1.5rem;border-radius:2rem;z-index:1100;font-size:0.875rem;box-shadow:0 4px 12px rgba(0,0,0,0.15);">' + message + '</div>');
+        $('body').append(toast);
+        setTimeout(function() {
+            toast.fadeOut(300, function() { toast.remove(); });
+        }, 3000);
+    };
+</script>
+{% endblock %}

@@ -1,0 +1,311 @@
+<!-- templates/agribusiness/orders.html -->
+{% extends 'base_org_admin.html' %}
+{% load static %}
+
+{% block title %}Orders - Agribusiness{% endblock %}
+
+{% block page_title %}Order Management{% endblock %}
+
+{% block breadcrumb %}
+<p class="text-xs text-gray-500 mt-0.5">Manage customer orders</p>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .status-filter {
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+    }
+    
+    .badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .badge-pending { background: #fef3c7; color: #92400e; }
+    .badge-confirmed { background: #dbeafe; color: #1e40af; }
+    .badge-processing { background: #e0e7ff; color: #3730a3; }
+    .badge-shipped { background: #cffafe; color: #155e75; }
+    .badge-delivered { background: #d1fae5; color: #065f46; }
+    .badge-cancelled { background: #fee2e2; color: #991b1b; }
+    
+    .data-table {
+        width: 100%;
+        overflow-x: auto;
+    }
+    
+    .data-table table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .data-table th {
+        text-align: left;
+        padding: 0.875rem;
+        background: #f8fafc;
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: #64748b;
+    }
+    
+    .data-table td {
+        padding: 0.875rem;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 0.875rem;
+    }
+    
+    .order-row {
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .order-row:hover {
+        background: #f8fafc;
+    }
+    
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid #e2e8f0;
+        border-top-color: #2E7D32;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    @media (max-width: 768px) {
+        .data-table th, .data-table td { padding: 0.5rem; font-size: 0.75rem; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h2 class="text-xl font-bold text-gray-800">Orders</h2>
+    <p class="text-sm text-gray-500 mt-1">View and manage all customer orders</p>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="p-4 border-b border-gray-200 flex flex-wrap gap-4 justify-between items-center">
+        <div class="flex gap-2">
+            <select id="statusFilter" class="status-filter">
+                <option value="">All Status</option>
+                <option value="PENDING">Pending</option>
+                <option value="CONFIRMED">Confirmed</option>
+                <option value="PROCESSING">Processing</option>
+                <option value="SHIPPED">Shipped</option>
+                <option value="DELIVERED">Delivered</option>
+                <option value="CANCELLED">Cancelled</option>
+            </select>
+            <input type="text" id="searchOrder" placeholder="Search order # or customer..." class="border border-gray-200 rounded-lg px-3 py-1.5">
+        </div>
+        <button id="refreshBtn" class="bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700">
+            <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+    </div>
+    
+    <div class="data-table">
+        <table class="w-full">
+            <thead>
+                <tr>
+                    <th>Order #</th>
+                    <th>Customer</th>
+                    <th>Date</th>
+                    <th>Items</th>
+                    <th>Total (UGX)</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="ordersTable">
+                <tr><td colspan="7" class="text-center py-8">
+                    <div class="loading-spinner"></div>
+                    <p class="mt-2 text-gray-500">Loading orders...</p>
+                 </td</tr
+            </tbody>
+        </table>
+    </div>
+    <div id="pagination" class="p-4 border-t border-gray-200 flex justify-center gap-2"></div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let totalPages = 1;
+    let statusFilter = '';
+    let searchQuery = '';
+    
+    $(document).ready(function() {
+        loadOrders();
+        
+        $('#statusFilter').change(function() {
+            statusFilter = $(this).val();
+            currentPage = 1;
+            loadOrders();
+        });
+        
+        $('#searchOrder').on('keyup', function() {
+            searchQuery = $(this).val();
+            currentPage = 1;
+            loadOrders();
+        });
+        
+        $('#refreshBtn').click(function() {
+            loadOrders();
+        });
+    });
+    
+    function loadOrders() {
+        $('#ordersTable').html('<tr><td colspan="7" class="text-center py-8"><div class="loading-spinner"></div><p class="mt-2 text-gray-500">Loading orders...</p></td></tr>');
+        
+        let url = '/api/v1/agribusiness/all_orders/?page=' + currentPage;
+        if (statusFilter) url = url + '&status=' + statusFilter;
+        if (searchQuery) url = url + '&search=' + encodeURIComponent(searchQuery);
+        
+        console.log('Fetching orders from:', url);
+        
+        $.ajax({
+            url: url,
+            method: 'GET',
+            timeout: 30000,
+            success: function(data) {
+                console.log('API Response:', data);
+                
+                var orders = data.orders || [];
+                totalPages = data.total_pages || 1;
+                
+                if (orders.length === 0) {
+                    $('#ordersTable').html('<tr><td colspan="7" class="text-center py-8 text-gray-500"><i class="fas fa-inbox text-4xl mb-2"></i><p>No orders found</p></td></tr>');
+                    $('#pagination').empty();
+                    return;
+                }
+                
+                displayOrders(orders);
+                displayPagination();
+            },
+            error: function(xhr, status, error) {
+                console.error('Error:', status, error);
+                $('#ordersTable').html('<tr><td colspan="7" class="text-center py-8 text-red-500"><i class="fas fa-exclamation-circle text-2xl mb-2"></i><p>Failed to load orders. Please try again.</p></td></tr>');
+                $('#pagination').empty();
+            }
+        });
+    }
+    
+    function displayOrders(orders) {
+        var html = '';
+        for (var i = 0; i < orders.length; i++) {
+            var order = orders[i];
+            var badgeClass = 'badge-' + (order.status ? order.status.toLowerCase() : 'pending');
+            var orderDate = order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A';
+            
+            html += '<tr class="order-row" onclick="viewOrder(' + order.id + ')">';
+            html += '<td class="px-4 py-3 font-medium">' + (order.order_number || 'N/A') + '</td>';
+            html += '<td class="px-4 py-3">' + escapeHtml(order.customer_name || 'Anonymous') + '</td>';
+            html += '<td class="px-4 py-3">' + orderDate + '</td>';
+            html += '<td class="px-4 py-3 text-center">' + (order.total_items || 0) + '</td>';
+            html += '<td class="px-4 py-3 font-semibold">UGX ' + formatNumber(order.total || 0) + '</td>';
+            html += '<td class="px-4 py-3"><span class="badge ' + badgeClass + '">' + (order.status || 'PENDING') + '</span></td>';
+            html += '<td class="px-4 py-3" onclick="event.stopPropagation()">';
+            html += '<select onchange="updateOrderStatus(' + order.id + ', this.value)" class="border rounded px-2 py-1 text-sm">';
+            html += '<option value="PENDING"' + (order.status === 'PENDING' ? ' selected' : '') + '>Pending</option>';
+            html += '<option value="CONFIRMED"' + (order.status === 'CONFIRMED' ? ' selected' : '') + '>Confirmed</option>';
+            html += '<option value="PROCESSING"' + (order.status === 'PROCESSING' ? ' selected' : '') + '>Processing</option>';
+            html += '<option value="SHIPPED"' + (order.status === 'SHIPPED' ? ' selected' : '') + '>Shipped</option>';
+            html += '<option value="DELIVERED"' + (order.status === 'DELIVERED' ? ' selected' : '') + '>Delivered</option>';
+            html += '<option value="CANCELLED"' + (order.status === 'CANCELLED' ? ' selected' : '') + '>Cancelled</option>';
+            html += '</select></td></tr>';
+        }
+        $('#ordersTable').html(html);
+    }
+    
+    function displayPagination() {
+        if (totalPages <= 1) {
+            $('#pagination').empty();
+            return;
+        }
+        
+        var html = '';
+        for (var i = 1; i <= totalPages; i++) {
+            if (i === currentPage) {
+                html += '<button class="px-3 py-1 bg-green-600 text-white rounded-lg">' + i + '</button>';
+            } else {
+                html += '<button onclick="goToPage(' + i + ')" class="px-3 py-1 border rounded-lg hover:bg-gray-50">' + i + '</button>';
+            }
+        }
+        $('#pagination').html(html);
+    }
+    
+    function goToPage(page) {
+        currentPage = page;
+        loadOrders();
+        $('html, body').animate({ scrollTop: 0 }, 300);
+    }
+    
+    function viewOrder(orderId) {
+        window.location.href = '/agribusiness/orders/' + orderId + '/';
+    }
+    
+    function updateOrderStatus(orderId, status) {
+        $.ajax({
+            url: '/api/v1/agribusiness/' + orderId + '/update_order_status/',
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            },
+            data: JSON.stringify({ status: status }),
+            success: function(response) {
+                showToast(response.message || 'Order status updated', 'success');
+                loadOrders();
+            },
+            error: function(xhr) {
+                console.error('Update error:', xhr);
+                showToast('Failed to update status', 'error');
+            }
+        });
+    }
+    
+    function formatNumber(num) {
+        if (!num) return '0';
+        return Math.round(num).toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
+    }
+    
+    function escapeHtml(text) {
+        if (!text) return '';
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    function showToast(message, type) {
+        if (window.showToast) {
+            window.showToast(message, type);
+        } else {
+            alert(message);
+        }
+    }
+    
+    function getCookie(name) {
+        var value = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    value = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return value;
+    }
+</script>
+{% endblock %}

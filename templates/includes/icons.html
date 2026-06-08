@@ -1,0 +1,114 @@
+<!-- templates/includes/icons.html -->
+{% comment %}
+Font Awesome Icon Reference Template
+Use these snippets throughout your templates
+{% endcomment %}
+
+<!-- Navigation Icons -->
+{% block nav_icons %}
+{% endcomment %}
+
+<!-- User Role Icons -->
+{% macro role_icon(role) %}
+    {% if role == 'FARMER' %}
+        <i class="fas fa-chicken"></i>
+    {% elif role == 'CUSTOMER' %}
+        <i class="fas fa-shopping-cart"></i>
+    {% elif role == 'SUPPLIER' %}
+        <i class="fas fa-box"></i>
+    {% elif role == 'TRAINER' %}
+        <i class="fas fa-chalkboard-user"></i>
+    {% elif role == 'FIELD_OFFICER' %}
+        <i class="fas fa-stethoscope"></i>
+    {% elif role == 'ORGANIZATION' %}
+        <i class="fas fa-building"></i>
+    {% elif role == 'ADMIN' %}
+        <i class="fas fa-user-shield"></i>
+    {% elif role == 'SUPER_ADMIN' %}
+        <i class="fas fa-crown"></i>
+    {% else %}
+        <i class="fas fa-user"></i>
+    {% endif %}
+{% endmacro %}
+
+<!-- Action Icons -->
+<i class="fas fa-plus-circle"></i>        <!-- Add -->
+<i class="fas fa-edit"></i>               <!-- Edit -->
+<i class="fas fa-trash-alt"></i>          <!-- Delete -->
+<i class="fas fa-save"></i>               <!-- Save -->
+<i class="fas fa-times"></i>              <!-- Cancel/Close -->
+<i class="fas fa-check"></i>              <!-- Confirm -->
+<i class="fas fa-search"></i>             <!-- Search -->
+<i class="fas fa-filter"></i>             <!-- Filter -->
+<i class="fas fa-download"></i>           <!-- Download -->
+<i class="fas fa-upload"></i>             <!-- Upload -->
+<i class="fas fa-print"></i>              <!-- Print -->
+<i class="fas fa-share"></i>              <!-- Share -->
+<i class="fas fa-copy"></i>               <!-- Copy -->
+<i class="fas fa-eye"></i>                <!-- View -->
+<i class="fas fa-eye-slash"></i>          <!-- Hide -->
+<i class="fas fa-lock"></i>               <!-- Lock -->
+<i class="fas fa-unlock-alt"></i>         <!-- Unlock -->
+<i class="fas fa-cog"></i>                <!-- Settings -->
+<i class="fas fa-bell"></i>               <!-- Notifications -->
+<i class="fas fa-envelope"></i>           <!-- Email -->
+<i class="fas fa-phone"></i>              <!-- Phone -->
+<i class="fas fa-map-marker-alt"></i>     <!-- Location -->
+<i class="fas fa-calendar"></i>           <!-- Calendar -->
+<i class="fas fa-clock"></i>              <!-- Time -->
+<i class="fas fa-chart-line"></i>         <!-- Analytics -->
+<i class="fas fa-chart-bar"></i>          <!-- Stats -->
+<i class="fas fa-file-alt"></i>           <!-- Document -->
+<i class="fas fa-file-pdf"></i>           <!-- PDF -->
+<i class="fas fa-file-excel"></i>         <!-- Excel -->
+<i class="fas fa-image"></i>              <!-- Image -->
+<i class="fas fa-video"></i>              <!-- Video -->
+<i class="fas fa-music"></i>              <!-- Audio -->
+
+<!-- Status Icons -->
+<i class="fas fa-check-circle text-success"></i>     <!-- Success -->
+<i class="fas fa-exclamation-circle text-danger"></i> <!-- Error -->
+<i class="fas fa-exclamation-triangle text-warning"></i> <!-- Warning -->
+<i class="fas fa-info-circle text-info"></i>         <!-- Info -->
+<i class="fas fa-spinner fa-spin"></i>               <!-- Loading -->
+
+<!-- Farm Related Icons -->
+<i class="fas fa-chicken"></i>            <!-- Chicken/Bird -->
+<i class="fas fa-egg"></i>                <!-- Egg -->
+<i class="fas fa-tractor"></i>            <!-- Farm -->
+<i class="fas fa-store"></i>              <!-- Shop -->
+<i class="fas fa-graduation-cap"></i>     <!-- Learning -->
+<i class="fas fa-syringe"></i>            <!-- Vaccination -->
+<i class="fas fa-clipboard-list"></i>     <!-- Records -->
+<i class="fas fa-chart-line"></i>         <!-- Growth -->
+<i class="fas fa-dollar-sign"></i>        <!-- Money/Sales -->
+<i class="fas fa-box"></i>                <!-- Inventory -->
+<i class="fas fa-truck"></i>              <!-- Delivery -->
+<i class="fas fa-warehouse"></i>          <!-- Storage -->
+
+<!-- Arrow Icons -->
+<i class="fas fa-arrow-left"></i>         <!-- Back -->
+<i class="fas fa-arrow-right"></i>        <!-- Next -->
+<i class="fas fa-arrow-up"></i>           <!-- Up -->
+<i class="fas fa-arrow-down"></i>         <!-- Down -->
+<i class="fas fa-chevron-left"></i>       <!-- Collapse left -->
+<i class="fas fa-chevron-right"></i>      <!-- Expand right -->
+<i class="fas fa-chevron-up"></i>         <!-- Collapse up -->
+<i class="fas fa-chevron-down"></i>       <!-- Expand down -->
+
+<!-- Social Media Icons -->
+<i class="fab fa-facebook"></i>           <!-- Facebook -->
+<i class="fab fa-twitter"></i>            <!-- Twitter -->
+<i class="fab fa-instagram"></i>          <!-- Instagram -->
+<i class="fab fa-whatsapp"></i>           <!-- WhatsApp -->
+<i class="fab fa-telegram"></i>           <!-- Telegram -->
+<i class="fab fa-youtube"></i>            <!-- YouTube -->
+<i class="fab fa-linkedin"></i>           <!-- LinkedIn -->
+<i class="fab fa-github"></i>             <!-- GitHub -->
+
+<!-- Payment Icons -->
+<i class="fab fa-cc-visa"></i>            <!-- Visa -->
+<i class="fab fa-cc-mastercard"></i>      <!-- Mastercard -->
+<i class="fab fa-paypal"></i>             <!-- PayPal -->
+<i class="fas fa-mobile-alt"></i>         <!-- Mobile Money -->
+<i class="fas fa-money-bill-wave"></i>    <!-- Cash -->

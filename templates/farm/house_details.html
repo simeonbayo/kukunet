@@ -1,0 +1,554 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}House Details - KUKUNET{% endblock %}
+
+{% block content %}
+<div class="p-4" id="houseDetails">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-4">
+        <div class="flex items-center gap-2">
+            <button onclick="history.back()" class="text-primary">
+                <i class="fas fa-arrow-left text-xl"></i>
+            </button>
+            <h1 class="text-2xl font-bold text-gray-800" id="houseName">House Details</h1>
+        </div>
+        <button onclick="openEditHouseModal()" class="bg-primary text-white px-4 py-2 rounded-xl text-sm">
+            <i class="fas fa-edit mr-1"></i>Edit House
+        </button>
+    </div>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="text-center py-8">
+        <div class="spinner mx-auto"></div>
+        <p class="text-gray-500 mt-2">Loading house details...</p>
+    </div>
+
+    <!-- House Details Content -->
+    <div id="houseContent" style="display: none;">
+        <!-- House Info Card -->
+        <div class="bg-gradient-to-r from-blue-700 to-blue-600 text-white rounded-2xl p-5 mb-6">
+            <div class="flex justify-between items-start">
+                <div>
+                    <h2 class="text-xl font-bold" id="detailHouseName">-</h2>
+                    <p class="opacity-90 mt-1" id="detailHouseNumber">-</p>
+                    <p class="opacity-75 text-sm mt-1" id="detailFarmName">-</p>
+                </div>
+                <div class="bg-white/20 rounded-full p-3">
+                    <i class="fas fa-building text-3xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-3 gap-3 mb-6">
+            <div class="card text-center">
+                <i class="fas fa-chicken text-2xl text-blue-600"></i>
+                <p class="text-2xl font-bold mt-1" id="statCapacity">0</p>
+                <p class="text-xs text-gray-500">Capacity</p>
+            </div>
+            <div class="card text-center">
+                <i class="fas fa-users text-2xl text-blue-600"></i>
+                <p class="text-2xl font-bold mt-1" id="statPopulation">0</p>
+                <p class="text-xs text-gray-500">Current Birds</p>
+            </div>
+            <div class="card text-center">
+                <i class="fas fa-percent text-2xl text-blue-600"></i>
+                <p class="text-2xl font-bold mt-1" id="statOccupancy">0%</p>
+                <p class="text-xs text-gray-500">Occupancy</p>
+            </div>
+        </div>
+
+        <!-- House Information -->
+        <div class="card mb-6">
+            <h3 class="font-bold text-gray-800 mb-3">
+                <i class="fas fa-info-circle text-blue-600 mr-2"></i>House Information
+            </h3>
+            <div class="space-y-2" id="houseInfo">
+                <div class="flex justify-between py-1 border-b">
+                    <span class="text-gray-500">House Type</span>
+                    <span class="font-medium" id="infoHouseType">-</span>
+                </div>
+                <div class="flex justify-between py-1 border-b">
+                    <span class="text-gray-500">Status</span>
+                    <span id="infoStatus">-</span>
+                </div>
+                <div class="flex justify-between py-1 border-b" id="dimensionsRow" style="display: none;">
+                    <span class="text-gray-500">Dimensions</span>
+                    <span class="font-medium" id="infoDimensions">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Equipment -->
+        <div class="card mb-6">
+            <h3 class="font-bold text-gray-800 mb-3">
+                <i class="fas fa-microchip text-blue-600 mr-2"></i>Equipment
+            </h3>
+            <div class="grid grid-cols-2 gap-2" id="equipmentList">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-spinner fa-spin text-blue-600"></i>
+                    <span class="text-sm">Loading equipment...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Current Flocks in this House -->
+        <div class="card">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-bold text-gray-800">
+                    <i class="fas fa-chicken text-blue-600 mr-2"></i>Current Flocks
+                </h3>
+                <button onclick="loadFlocksInHouse()" class="text-blue-600 text-sm">
+                    <i class="fas fa-sync-alt mr-1"></i>Refresh
+                </button>
+            </div>
+            <div id="flocksInHouse" class="space-y-2">
+                <p class="text-gray-500 text-sm text-center py-4">Loading flocks...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit House Modal -->
+<div id="editHouseModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full max-h-screen overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">
+                    <i class="fas fa-edit text-primary mr-2"></i>Edit House
+                </h2>
+                <button onclick="closeModal('editHouseModal')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <form id="editHouseForm">
+                {% csrf_token %}
+                <input type="hidden" id="editHouseId">
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">House Number</label>
+                    <input type="text" id="editHouseNumber" class="form-input" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">House Name</label>
+                    <input type="text" id="editHouseName" class="form-input" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">House Type</label>
+                    <select id="editHouseType" class="form-input" required>
+                        <option value="OPEN">Open House</option>
+                        <option value="CLOSED">Closed House</option>
+                        <option value="BATTERY">Battery Cages</option>
+                        <option value="DEEP_LITTER">Deep Litter</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Capacity</label>
+                    <input type="number" id="editHouseCapacity" class="form-input" required>
+                </div>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div>
+                        <label class="block text-sm font-bold mb-2">Length (m)</label>
+                        <input type="number" step="0.01" id="editHouseLength" class="form-input">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold mb-2">Width (m)</label>
+                        <input type="number" step="0.01" id="editHouseWidth" class="form-input">
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-bold mb-2">Equipment</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editHasAutoFeeder" class="mr-2"> Automated Feeder
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editHasAutoDrinker" class="mr-2"> Automated Drinker
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editHasVentilation" class="mr-2"> Ventilation
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editHasHeating" class="mr-2"> Heating
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="editHasLighting" class="mr-2"> Lighting
+                        </label>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="editHouseActive" class="mr-2">
+                        <span class="text-sm font-bold">Active</span>
+                    </label>
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit" class="flex-1 btn-primary">
+                        <i class="fas fa-save mr-2"></i>Update
+                    </button>
+                    <button type="button" onclick="deleteHouse()" class="flex-1 bg-red-600 text-white py-2 rounded-xl">
+                        <i class="fas fa-trash mr-2"></i>Delete
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+const houseId = {{ house_id }};
+let houseData = null;
+
+// Get CSRF token
+function getCSRFToken() {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === ('csrftoken' + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Load house details
+function loadHouseDetails() {
+    console.log('Loading house details for ID:', houseId);
+    
+    // Show loading, hide content
+    $('#loadingState').show();
+    $('#houseContent').hide();
+    
+    fetch(`/api/v1/farms/houses/${houseId}/`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (response.status === 401) {
+            window.location.href = '/login/';
+            return;
+        }
+        return response.json();
+    })
+    .then(house => {
+        console.log('House data received:', house);
+        houseData = house;
+        displayHouseDetails(house);
+        loadFlocksInHouse();
+        
+        // Hide loading, show content
+        $('#loadingState').hide();
+        $('#houseContent').show();
+    })
+    .catch(error => {
+        console.error('Error loading house:', error);
+        $('#loadingState').html(`
+            <div class="card text-center py-8">
+                <i class="fas fa-exclamation-triangle text-4xl text-red-500 mb-2"></i>
+                <p class="text-gray-500">Error loading house details</p>
+                <button onclick="loadHouseDetails()" class="btn-primary mt-3 text-sm py-2 px-4">
+                    <i class="fas fa-sync-alt mr-1"></i>Retry
+                </button>
+            </div>
+        `);
+    });
+}
+
+function displayHouseDetails(house) {
+    // Header
+    $('#houseName').text(house.name);
+    $('#detailHouseName').text(house.name);
+    $('#detailHouseNumber').text(house.house_number);
+    $('#detailFarmName').text(house.farm_name || '-');
+    
+    // Stats
+    const occupancyRate = house.occupancy_rate || 0;
+    $('#statCapacity').text(house.capacity);
+    $('#statPopulation').text(house.current_population || 0);
+    $('#statOccupancy').text(Math.round(occupancyRate) + '%');
+    
+    // House Information
+    const houseTypeMap = {
+        'OPEN': 'Open House',
+        'CLOSED': 'Closed House',
+        'BATTERY': 'Battery Cages',
+        'DEEP_LITTER': 'Deep Litter'
+    };
+    $('#infoHouseType').text(houseTypeMap[house.house_type] || house.house_type);
+    
+    // Status badge
+    const statusHtml = house.is_active 
+        ? '<span class="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700">Active</span>'
+        : '<span class="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700">Inactive</span>';
+    $('#infoStatus').html(statusHtml);
+    
+    // Dimensions
+    if (house.length_m && house.width_m) {
+        $('#dimensionsRow').show();
+        $('#infoDimensions').text(`${house.length_m}m x ${house.width_m}m`);
+        if (house.area_sqft) {
+            $('#infoDimensions').text(`${house.length_m}m x ${house.width_m}m (${house.area_sqft} sq ft)`);
+        }
+    } else {
+        $('#dimensionsRow').hide();
+    }
+    
+    // Equipment
+    const equipment = [
+        { name: 'Automated Feeder', enabled: house.has_automated_feeder, icon: 'fa-robot' },
+        { name: 'Automated Drinker', enabled: house.has_automated_drinker, icon: 'fa-tint' },
+        { name: 'Ventilation System', enabled: house.has_ventilation, icon: 'fa-fan' },
+        { name: 'Heating System', enabled: house.has_heating, icon: 'fa-fire' },
+        { name: 'Lighting System', enabled: house.has_lighting, icon: 'fa-lightbulb' }
+    ];
+    
+    let equipmentHtml = '';
+    equipment.forEach(item => {
+        const iconClass = item.enabled ? 'fa-check-circle text-green-600' : 'fa-times-circle text-gray-400';
+        equipmentHtml += `
+            <div class="flex items-center gap-2">
+                <i class="fas ${iconClass}"></i>
+                <span class="text-sm ${item.enabled ? 'text-gray-800' : 'text-gray-400'}">${item.name}</span>
+            </div>
+        `;
+    });
+    $('#equipmentList').html(equipmentHtml);
+}
+
+function loadFlocksInHouse() {
+    $('#flocksInHouse').html('<p class="text-gray-500 text-sm text-center py-4"><i class="fas fa-spinner fa-spin mr-2"></i>Loading flocks...</p>');
+    
+    fetch(`/api/v1/farms/flocks/?house=${houseId}`, {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(flocks => {
+        if (!flocks || flocks.length === 0) {
+            $('#flocksInHouse').html(`
+                <div class="text-center py-4">
+                    <i class="fas fa-chicken text-3xl text-gray-300 mb-2"></i>
+                    <p class="text-gray-500 text-sm">No flocks currently in this house</p>
+                </div>
+            `);
+            return;
+        }
+        
+        let html = '';
+        flocks.forEach(flock => {
+            const statusColor = flock.status === 'ACTIVE' ? 'green' : 
+                               (flock.status === 'PLANNED' ? 'yellow' : 'gray');
+            html += `
+                <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                    <div>
+                        <p class="font-medium text-gray-800">${escapeHtml(flock.batch_name)}</p>
+                        <p class="text-xs text-gray-500">${flock.bird_type} • ${flock.breed}</p>
+                        <p class="text-xs text-gray-500 mt-1">
+                            <i class="fas fa-chicken mr-1"></i>${flock.current_quantity} birds
+                            <span class="mx-1">•</span>
+                            <i class="far fa-calendar-alt mr-1"></i>${flock.age_days} days
+                        </p>
+                    </div>
+                    <div class="text-right">
+                        <span class="px-2 py-1 text-xs rounded-full bg-${statusColor}-100 text-${statusColor}-700">
+                            ${flock.status}
+                        </span>
+                        <div class="mt-1">
+                            <a href="/farm/flock/${flock.id}/dashboard/" class="text-blue-600 text-xs hover:underline">
+                                View Details →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        $('#flocksInHouse').html(html);
+    })
+    .catch(error => {
+        console.error('Error loading flocks:', error);
+        $('#flocksInHouse').html(`
+            <div class="text-center py-4">
+                <i class="fas fa-exclamation-triangle text-3xl text-red-400 mb-2"></i>
+                <p class="text-gray-500 text-sm">Error loading flocks</p>
+                <button onclick="loadFlocksInHouse()" class="text-blue-600 text-sm mt-2">
+                    <i class="fas fa-sync-alt mr-1"></i>Retry
+                </button>
+            </div>
+        `);
+    });
+}
+
+// Edit House
+function openEditHouseModal() {
+    if (!houseData) return;
+    
+    $('#editHouseId').val(houseData.id);
+    $('#editHouseNumber').val(houseData.house_number);
+    $('#editHouseName').val(houseData.name);
+    $('#editHouseType').val(houseData.house_type);
+    $('#editHouseCapacity').val(houseData.capacity);
+    $('#editHouseLength').val(houseData.length_m || '');
+    $('#editHouseWidth').val(houseData.width_m || '');
+    $('#editHasAutoFeeder').prop('checked', houseData.has_automated_feeder);
+    $('#editHasAutoDrinker').prop('checked', houseData.has_automated_drinker);
+    $('#editHasVentilation').prop('checked', houseData.has_ventilation);
+    $('#editHasHeating').prop('checked', houseData.has_heating);
+    $('#editHasLighting').prop('checked', houseData.has_lighting);
+    $('#editHouseActive').prop('checked', houseData.is_active);
+    
+    $('#editHouseModal').removeClass('hidden');
+}
+
+// Update House
+$('#editHouseForm').on('submit', function(e) {
+    e.preventDefault();
+    showLoading();
+    
+    const houseId = $('#editHouseId').val();
+    const formData = {
+        house_number: $('#editHouseNumber').val(),
+        name: $('#editHouseName').val(),
+        house_type: $('#editHouseType').val(),
+        capacity: parseInt($('#editHouseCapacity').val()),
+        length_m: $('#editHouseLength').val() ? parseFloat($('#editHouseLength').val()) : null,
+        width_m: $('#editHouseWidth').val() ? parseFloat($('#editHouseWidth').val()) : null,
+        has_automated_feeder: $('#editHasAutoFeeder').is(':checked'),
+        has_automated_drinker: $('#editHasAutoDrinker').is(':checked'),
+        has_ventilation: $('#editHasVentilation').is(':checked'),
+        has_heating: $('#editHasHeating').is(':checked'),
+        has_lighting: $('#editHasLighting').is(':checked'),
+        is_active: $('#editHouseActive').is(':checked')
+    };
+    
+    fetch(`/api/v1/farms/houses/${houseId}/`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(async response => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || `HTTP ${response.status}`);
+        return data;
+    })
+    .then(data => {
+        hideLoading();
+        showToast('House updated successfully!');
+        closeModal('editHouseModal');
+        loadHouseDetails();
+    })
+    .catch(error => {
+        hideLoading();
+        showToast(error.message || 'Error updating house', 'error');
+    });
+});
+
+// Delete House
+function deleteHouse() {
+    const houseId = $('#editHouseId').val();
+    
+    if (confirm('Are you sure you want to delete this house? This action cannot be undone.')) {
+        showLoading();
+        
+        fetch(`/api/v1/farms/houses/${houseId}/`, {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            hideLoading();
+            if (response.status === 204 || response.ok) {
+                showToast('House deleted successfully!');
+                window.location.href = '/farm/houses/';
+            } else {
+                showToast('Error deleting house', 'error');
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            showToast('Network error', 'error');
+        });
+    }
+}
+
+function closeModal(modalId) {
+    $(`#${modalId}`).addClass('hidden');
+}
+
+function showLoading() {
+    if ($('#loadingOverlay').length) $('#loadingOverlay').removeClass('hidden');
+}
+
+function hideLoading() {
+    if ($('#loadingOverlay').length) $('#loadingOverlay').addClass('hidden');
+}
+
+function showToast(message, type = 'success') {
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+    const bgColor = type === 'success' ? 'bg-green-500' : 'bg-red-500';
+    const toast = $(`
+        <div class="fixed bottom-20 left-1/2 transform -translate-x-1/2 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-fade-in">
+            <i class="fas ${icon} mr-2"></i>${message}
+        </div>
+    `);
+    $('body').append(toast);
+    setTimeout(() => toast.fadeOut(300, () => toast.remove()), 3000);
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Initialize
+$(document).ready(function() {
+    loadHouseDetails();
+});
+</script>
+
+<style>
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, 10px); }
+    to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #2E7D32;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}

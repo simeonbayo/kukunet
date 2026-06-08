@@ -1,0 +1,46 @@
+/* Logo Styles */
+.logo {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.logo img {
+    display: block;
+    height: 36px;
+    width: auto;
+    transition: opacity 0.2s ease;
+}
+
+.logo:hover img {
+    opacity: 0.85;
+}
+
+/* Logo sizes */
+.logo-sm img {
+    height: 28px;
+}
+
+.logo-md img {
+    height: 40px;
+}
+
+.logo-lg img {
+    height: 55px;
+}
+
+.logo-xl img {
+    height: 70px;
+}
+
+/* For white/dark backgrounds */
+.logo-white img {
+    filter: brightness(0) invert(1);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .logo img {
+        height: 32px;
+    }
+}

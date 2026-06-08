@@ -1,0 +1,136 @@
+<!-- templates/agribusiness/orders.html -->
+{% extends 'base_org_admin.html' %}
+{% load static %}
+
+{% block title %}Orders - Agribusiness{% endblock %}
+
+{% block page_title %}Orders{% endblock %}
+
+{% block breadcrumb %}
+<p class="text-xs text-gray-500 mt-0.5">Manage customer orders</p>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .badge-pending { background: #fef3c7; color: #92400e; }
+    .badge-confirmed { background: #dbeafe; color: #1e40af; }
+    .badge-processing { background: #e0e7ff; color: #3730a3; }
+    .badge-shipped { background: #cffafe; color: #155e75; }
+    .badge-delivered { background: #d1fae5; color: #065f46; }
+    .badge-cancelled { background: #fee2e2; color: #991b1b; }
+    
+    .data-table { width: 100%; overflow-x: auto; }
+    .data-table table { width: 100%; border-collapse: collapse; }
+    .data-table th { text-align: left; padding: 0.875rem; background: #f8fafc; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; color: #64748b; }
+    .data-table td { padding: 0.875rem; border-bottom: 1px solid #e2e8f0; font-size: 0.875rem; }
+    .order-row { cursor: pointer; }
+    .order-row:hover { background: #f8fafc; }
+    
+    @media (max-width: 768px) {
+        .data-table th, .data-table td { padding: 0.5rem; font-size: 0.75rem; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h2 class="text-xl font-bold text-gray-800">Orders</h2>
+    <p class="text-sm text-gray-500 mt-1">View and manage customer orders</p>
+</div>
+
+<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="p-4 border-b border-gray-200 flex flex-wrap gap-4">
+        <select id="statusFilter" class="border border-gray-200 rounded-lg px-3 py-1.5">
+            <option value="">All Status</option>
+            <option value="PENDING">Pending</option>
+            <option value="CONFIRMED">Confirmed</option>
+            <option value="PROCESSING">Processing</option>
+            <option value="SHIPPED">Shipped</option>
+            <option value="DELIVERED">Delivered</option>
+            <option value="CANCELLED">Cancelled</option>
+        </select>
+        <input type="text" id="searchOrder" placeholder="Search order # or customer..." class="border border-gray-200 rounded-lg px-3 py-1.5">
+    </div>
+    <div class="data-table">
+        <table>
+            <thead><tr><th>Order #</th><th>Customer</th><th>Date</th><th>Items</th><th>Total</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="ordersTable">...</tbody>
+        </table>
+    </div>
+    <div id="pagination" class="p-4 border-t border-gray-200 flex justify-center gap-2"></div>
+</div>
+
+<script>
+    let currentPage = 1, totalPages = 1, statusFilter = '', searchQuery = '';
+    
+    $(document).ready(function() {
+        loadOrders();
+        $('#statusFilter').change(function() { statusFilter = $(this).val(); currentPage = 1; loadOrders(); });
+        $('#searchOrder').on('keyup', function() { searchQuery = $(this).val(); currentPage = 1; loadOrders(); });
+    });
+    
+    function loadOrders() {
+        $('#ordersTable').html('<tr><td colspan="7" class="text-center py-8"><div class="loading-spinner"></div> Loading...</td</tr>');
+        let url = `/api/v1/agribusiness/all_orders/?page=${currentPage}`;
+        if (statusFilter) url += `&status=${statusFilter}`;
+        if (searchQuery) url += `&search=${encodeURIComponent(searchQuery)}`;
+        $.ajax({
+            url: url,
+            success: function(data) {
+                displayOrders(data.orders || []);
+                totalPages = data.total_pages || 1;
+                displayPagination();
+            },
+            error: () => $('#ordersTable').html('<td><td colspan="7" class="text-center py-8 text-red-500">Failed to load orders</td</tr>')
+        });
+    }
+    
+    function displayOrders(orders) {
+        if (!orders?.length) { $('#ordersTable').html('<tr><td colspan="7" class="text-center py-8 text-gray-500">No orders found</td</tr>'); return; }
+        let html = '';
+        orders.forEach(o => {
+            html += `<tr class="order-row" onclick="window.location.href='/agribusiness/orders/${o.id}/'">
+                <td class="px-4 py-3 font-medium">${o.order_number}</td>
+                <td class="px-4 py-3">${escapeHtml(o.customer_name)}</td>
+                <td class="px-4 py-3">${new Date(o.created_at).toLocaleDateString()}</td>
+                <td class="px-4 py-3">${o.total_items || 0}</td>
+                <td class="px-4 py-3">UGX ${formatNumber(o.total)}</td>
+                <td class="px-4 py-3"><span class="badge badge-${o.status.toLowerCase()}">${o.status}</span></td>
+                <td class="px-4 py-3" onclick="event.stopPropagation()">
+                    <select onchange="updateOrderStatus(${o.id}, this.value)" class="border rounded px-2 py-1 text-sm">
+                        <option value="PENDING" ${o.status === 'PENDING' ? 'selected' : ''}>Pending</option>
+                        <option value="CONFIRMED" ${o.status === 'CONFIRMED' ? 'selected' : ''}>Confirmed</option>
+                        <option value="PROCESSING" ${o.status === 'PROCESSING' ? 'selected' : ''}>Processing</option>
+                        <option value="SHIPPED" ${o.status === 'SHIPPED' ? 'selected' : ''}>Shipped</option>
+                        <option value="DELIVERED" ${o.status === 'DELIVERED' ? 'selected' : ''}>Delivered</option>
+                        <option value="CANCELLED" ${o.status === 'CANCELLED' ? 'selected' : ''}>Cancelled</option>
+                    </select>
+                </td>
+            </tr>`;
+        });
+        $('#ordersTable').html(html);
+    }
+    
+    function updateOrderStatus(id, status) {
+        $.ajax({
+            url: `/api/v1/agribusiness/${id}/update_order_status/`,
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCookie('csrftoken'), 'Content-Type': 'application/json' },
+            data: JSON.stringify({ status: status }),
+            success: () => { showToast('Order status updated', 'success'); loadOrders(); }
+        });
+    }
+    
+    function formatNumber(n) { return n ? Math.round(n).toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,') : '0'; }
+    function escapeHtml(t) { if (!t) return ''; const d = document.createElement('div'); d.textContent = t; return d.innerHTML; }
+    function showToast(m, t) { if (window.showToast) window.showToast(m, t); else alert(m); }
+    function getCookie(n) { let v = null; if (document.cookie) { let c = document.cookie.split(';'); for (let i = 0; i < c.length; i++) { let cookie = c[i].trim(); if (cookie.substring(0, n.length + 1) === (n + '=')) { v = decodeURIComponent(cookie.substring(n.length + 1)); break; } } } return v; }
+</script>
+{% endblock %}

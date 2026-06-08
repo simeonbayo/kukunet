@@ -1,0 +1,437 @@
+<!-- templates/shop/checkout.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Checkout - KUKUNET{% endblock %}
+
+{% block extra_css %}
+<style>
+    .checkout-container {
+        max-width: 100%;
+        padding: 1rem;
+        background: #f8fafc;
+        min-height: 100vh;
+    }
+    
+    .checkout-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        border: 1px solid #e2e8f0;
+    }
+    
+    .checkout-card h2 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    
+    .form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .form-group label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #475569;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.75rem;
+        font-size: 0.9375rem;
+        transition: all 0.2s;
+        background: white;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #2E7D32;
+        box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+    }
+    
+    /* Order Summary */
+    .order-summary {
+        background: #f8fafc;
+        border-radius: 1rem;
+        padding: 1rem;
+    }
+    
+    .order-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .order-item:last-child {
+        border-bottom: none;
+    }
+    
+    .order-item-info {
+        flex: 1;
+    }
+    
+    .order-item-title {
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #1e293b;
+    }
+    
+    .order-item-quantity {
+        font-size: 0.75rem;
+        color: #64748b;
+    }
+    
+    .order-item-price {
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #2E7D32;
+    }
+    
+    .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.5rem 0;
+        font-size: 0.875rem;
+    }
+    
+    .summary-row.total {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1e293b;
+        border-top: 2px solid #e2e8f0;
+        margin-top: 0.5rem;
+        padding-top: 0.75rem;
+    }
+    
+    .place-order-btn {
+        width: 100%;
+        background: #2E7D32;
+        color: white;
+        border: none;
+        padding: 1rem;
+        border-radius: 2rem;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-top: 1rem;
+    }
+    
+    .place-order-btn:hover {
+        background: #1B5E20;
+    }
+    
+    .place-order-btn:disabled {
+        background: #94a3b8;
+        cursor: not-allowed;
+    }
+    
+    .back-to-cart {
+        display: inline-block;
+        color: #2E7D32;
+        text-decoration: none;
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+    }
+    
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 2px solid white;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-right: 0.5rem;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    /* Desktop Layout - Shipping Information First */
+    @media (min-width: 768px) {
+        .checkout-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        .checkout-layout {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 1.5rem;
+        }
+        .checkout-card {
+            margin-bottom: 0;
+        }
+    }
+    
+    @media (max-width: 767px) {
+        .order-summary-section {
+            margin-top: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="checkout-container">
+    <a href="/shop/" class="back-to-cart">
+        <i class="fas fa-arrow-left"></i> Back to Shop
+    </a>
+    
+    <div class="checkout-layout">
+        <!-- Shipping Information Form - Comes First -->
+        <div class="checkout-card">
+            <h2>Shipping Information</h2>
+            
+            <form id="checkoutForm">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" id="fullName" name="full_name" value="{{ user.full_name|default:'' }}" placeholder="Enter your full name">
+                </div>
+                
+                <div class="form-group">
+                    <label>Phone Number *</label>
+                    <input type="tel" id="phone" name="phone_number" value="{{ user.phone_number|default:'' }}" placeholder="Enter your phone number">
+                </div>
+                
+                <div class="form-group">
+                    <label>Email (Optional)</label>
+                    <input type="email" id="email" name="email" value="{{ user.email|default:'' }}" placeholder="Enter your email">
+                </div>
+                
+                <div class="form-group">
+                    <label>Shipping Address *</label>
+                    <textarea id="address" name="shipping_address" rows="3" placeholder="Street, building, landmark, district"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>City/Town *</label>
+                    <input type="text" id="city" name="city" placeholder="Enter your city/town">
+                </div>
+                
+                <div class="form-group">
+                    <label>Payment Method *</label>
+                    <select id="paymentMethod" name="payment_method">
+                        <option value="CASH">Cash on Delivery</option>
+                        <option value="MOBILE_MONEY">Mobile Money</option>
+                        <option value="BANK_TRANSFER">Bank Transfer</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Order Notes (Optional)</label>
+                    <textarea id="notes" name="notes" rows="2" placeholder="Any special instructions?"></textarea>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Order Summary Section - Comes Second -->
+        <div class="checkout-card order-summary-section">
+            <h2>Order Summary</h2>
+            
+            <div id="cartItemsList" class="order-summary">
+                <div class="text-center py-8">
+                    <div class="loading-spinner" style="border-color: #e2e8f0; border-top-color: #2E7D32;"></div>
+                    <p class="mt-2 text-gray-500 text-sm">Loading cart...</p>
+                </div>
+            </div>
+            
+            <button id="placeOrderBtn" class="place-order-btn" onclick="placeOrder()">Place Order →</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Get user data from Django template
+    const userFullName = "{{ user.full_name|default:''|escapejs }}";
+    const userPhone = "{{ user.phone_number|default:''|escapejs }}";
+    const userEmail = "{{ user.email|default:''|escapejs }}";
+    
+    $(document).ready(function() {
+        // Set form values from user data
+        if (userFullName && userFullName !== 'None' && userFullName !== '') {
+            $('#fullName').val(userFullName);
+        }
+        if (userPhone && userPhone !== 'None' && userPhone !== '') {
+            $('#phone').val(userPhone);
+        }
+        if (userEmail && userEmail !== 'None' && userEmail !== '') {
+            $('#email').val(userEmail);
+        }
+        
+        loadCartSummary();
+    });
+    
+    function loadCartSummary() {
+        $.ajax({
+            url: '/api/v1/cart/view/',
+            method: 'GET',
+            success: function(cart) {
+                displayCartSummary(cart);
+            },
+            error: function(xhr) {
+                console.error('Error loading cart:', xhr);
+                $('#cartItemsList').html('<div class="text-center py-8 text-red-500 text-sm">Failed to load cart. Please go back and try again.</div>');
+                $('#placeOrderBtn').prop('disabled', true);
+            }
+        });
+    }
+    
+    function displayCartSummary(cart) {
+        if (!cart.items || cart.items.length === 0) {
+            $('#cartItemsList').html(`
+                <div class="text-center py-8">
+                    <i class="fas fa-shopping-cart text-4xl text-gray-300 mb-3"></i>
+                    <p class="text-gray-500">Your cart is empty</p>
+                    <a href="/shop/" class="inline-block mt-4 text-green-600">Continue Shopping →</a>
+                </div>
+            `);
+            $('#placeOrderBtn').prop('disabled', true);
+            return;
+        }
+        
+        let itemsHtml = '';
+        cart.items.forEach(item => {
+            itemsHtml += `
+                <div class="order-item">
+                    <div class="order-item-info">
+                        <div class="order-item-title">${escapeHtml(item.product_name)}</div>
+                        <div class="order-item-quantity">Quantity: ${item.quantity}</div>
+                    </div>
+                    <div class="order-item-price">UGX ${formatNumber(item.quantity * item.price_at_add)}</div>
+                </div>
+            `;
+        });
+        
+        itemsHtml += `
+            <div class="summary-row">
+                <span>Subtotal:</span>
+                <span>UGX ${formatNumber(cart.subtotal || 0)}</span>
+            </div>
+            <div class="summary-row">
+                <span>Tax (10%):</span>
+                <span>UGX ${formatNumber(cart.tax || 0)}</span>
+            </div>
+            <div class="summary-row total">
+                <span>Total:</span>
+                <span>UGX ${formatNumber(cart.total || 0)}</span>
+            </div>
+        `;
+        
+        $('#cartItemsList').html(itemsHtml);
+    }
+    
+    function placeOrder() {
+        let orderData = {
+            shipping_address: $('#address').val().trim(),
+            shipping_city: $('#city').val().trim(),
+            shipping_phone: $('#phone').val().trim(),
+            payment_method: $('#paymentMethod').val(),
+            notes: $('#notes').val().trim(),
+            full_name: $('#fullName').val().trim(),
+            email: $('#email').val().trim()
+        };
+        
+        // Validate required fields
+        if (!orderData.full_name) {
+            showToast('Please enter your full name', 'error');
+            $('#fullName').focus();
+            return;
+        }
+        
+        if (!orderData.shipping_address) {
+            showToast('Please enter your shipping address', 'error');
+            $('#address').focus();
+            return;
+        }
+        
+        if (!orderData.shipping_city) {
+            showToast('Please enter your city/town', 'error');
+            $('#city').focus();
+            return;
+        }
+        
+        if (!orderData.shipping_phone) {
+            showToast('Please enter your phone number', 'error');
+            $('#phone').focus();
+            return;
+        }
+        
+        let $btn = $('#placeOrderBtn');
+        $btn.prop('disabled', true).html('<div class="loading-spinner"></div> Processing...');
+        
+        $.ajax({
+            url: '/api/v1/cart/checkout/',
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json'
+            },
+            data: JSON.stringify(orderData),
+            success: function(response) {
+                showToast(response.message || 'Order placed successfully!', 'success');
+                setTimeout(() => {
+                    window.location.href = `/orders/${response.order_id}/`;
+                }, 2000);
+            },
+            error: function(xhr) {
+                let error = xhr.responseJSON?.error || 'Failed to place order. Please try again.';
+                showToast(error, 'error');
+                $btn.prop('disabled', false).html('Place Order →');
+            }
+        });
+    }
+    
+    function formatNumber(num) {
+        if (!num) return '0';
+        return Math.round(num).toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
+    }
+    
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    function showToast(message, type) {
+        let bgColor = type === 'success' ? '#059669' : '#dc2626';
+        let toast = $(`<div style="position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:${bgColor};color:white;padding:0.75rem 1.5rem;border-radius:2rem;z-index:1100;font-size:0.875rem;box-shadow:0 4px 12px rgba(0,0,0,0.15);">${message}</div>`);
+        $('body').append(toast);
+        setTimeout(() => toast.fadeOut(300, () => toast.remove()), 3000);
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            let cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %}
