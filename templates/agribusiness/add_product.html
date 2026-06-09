@@ -47,7 +47,7 @@
     .image-preview-container {
         border: 2px dashed #e2e8f0;
         border-radius: 0.5rem;
-        padding: 1.5rem;
+        padding: 1rem;
         text-align: center;
         cursor: pointer;
         transition: all 0.2s ease;
@@ -59,8 +59,8 @@
     }
     
     .image-preview {
-        max-width: 200px;
-        max-height: 200px;
+        max-width: 150px;
+        max-height: 150px;
         object-fit: cover;
         border-radius: 0.5rem;
         margin: 0 auto;
@@ -85,6 +85,24 @@
     .btn-submit:disabled {
         background: #94a3b8;
         cursor: not-allowed;
+    }
+    
+    .btn-cancel {
+        background: #6b7280;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+    }
+    
+    .btn-cancel:hover {
+        background: #4b5563;
     }
     
     .loading-spinner {
@@ -132,7 +150,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="form-group">
                     <label>Price (UGX) *</label>
-                    <input type="number" id="productPrice" name="price" required placeholder="0">
+                    <input type="number" id="productPrice" name="price" required placeholder="0" step="0.01">
                 </div>
                 <div class="form-group">
                     <label>Stock Quantity *</label>
@@ -150,6 +168,9 @@
                         <p class="text-gray-400 text-xs mt-1">PNG, JPG, JPEG up to 5MB</p>
                     </div>
                     <img id="imagePreview" class="image-preview hidden" alt="Preview">
+                    <button type="button" id="cancelImageBtn" class="bg-gray-300 text-gray-700 px-3 py-1 rounded-lg text-sm mt-2 hidden" onclick="cancelImageUpload()">
+                        Cancel Upload
+                    </button>
                 </div>
             </div>
             
@@ -158,7 +179,10 @@
                 <textarea id="productDescription" name="description" rows="4" placeholder="Product description..."></textarea>
             </div>
             
-            <button type="submit" id="submitBtn" class="btn-submit">Add Product</button>
+            <div class="flex gap-3">
+                <a href="{% url 'frontend:agribusiness_products' %}" class="btn-cancel flex-1 text-center">Cancel</a>
+                <button type="submit" id="submitBtn" class="btn-submit flex-1">Add Product</button>
+            </div>
         </form>
     </div>
 </div>
@@ -167,6 +191,7 @@
     function previewImage(input) {
         const preview = document.getElementById('imagePreview');
         const previewArea = document.getElementById('imagePreviewArea');
+        const cancelBtn = document.getElementById('cancelImageBtn');
         
         if (input.files && input.files[0]) {
             const reader = new FileReader();
@@ -174,63 +199,112 @@
                 preview.src = e.target.result;
                 preview.classList.remove('hidden');
                 previewArea.classList.add('hidden');
+                cancelBtn.classList.remove('hidden');
             }
             reader.readAsDataURL(input.files[0]);
         }
     }
     
-    $('#addProductForm').on('submit', function(e) {
-        e.preventDefault();
+    function cancelImageUpload() {
+        const preview = document.getElementById('imagePreview');
+        const previewArea = document.getElementById('imagePreviewArea');
+        const cancelBtn = document.getElementById('cancelImageBtn');
+        const fileInput = document.getElementById('productImage');
         
-        let formData = new FormData();
-        formData.append('name', $('#productName').val().trim());
-        formData.append('category', $('#productCategory').val());
-        formData.append('price', parseFloat($('#productPrice').val()));
-        formData.append('stock_quantity', parseInt($('#productStock').val()));
-        formData.append('description', $('#productDescription').val().trim());
-        
-        const imageFile = $('#productImage')[0].files[0];
-        if (imageFile) formData.append('image', imageFile);
-        
-        if (!formData.get('name') || !formData.get('category') || formData.get('price') <= 0) {
-            showToast('Please fill all required fields correctly', 'error');
-            return;
-        }
-        
-        let $btn = $('#submitBtn');
-        $btn.prop('disabled', true).html('<div class="loading-spinner"></div> Adding...');
-        
-        $.ajax({
-            url: '/api/v1/agribusiness/add_product/',
-            method: 'POST',
-            headers: { 'X-CSRFToken': getCookie('csrftoken') },
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(response) {
-                showToast('Product added successfully!', 'success');
-                setTimeout(() => {
-                    window.location.href = '/agribusiness/products/';
-                }, 1500);
-            },
-            error: function(xhr) {
-                showToast(xhr.responseJSON?.error || 'Failed to add product', 'error');
-                $btn.prop('disabled', false).html('Add Product');
+        preview.src = '';
+        preview.classList.add('hidden');
+        previewArea.classList.remove('hidden');
+        cancelBtn.classList.add('hidden');
+        fileInput.value = '';
+    }
+    
+    $(document).ready(function() {
+        $('#addProductForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            let formData = new FormData();
+            formData.append('name', $('#productName').val().trim());
+            formData.append('category', $('#productCategory').val());
+            formData.append('price', parseFloat($('#productPrice').val()));
+            formData.append('stock_quantity', parseInt($('#productStock').val()));
+            formData.append('description', $('#productDescription').val().trim());
+            
+            const imageFile = $('#productImage')[0].files[0];
+            if (imageFile) {
+                formData.append('image', imageFile);
             }
+            
+            // Validation
+            if (!formData.get('name')) {
+                showToastMessage('Product name is required', 'error');
+                $('#productName').focus();
+                return;
+            }
+            
+            if (!formData.get('category')) {
+                showToastMessage('Category is required', 'error');
+                $('#productCategory').focus();
+                return;
+            }
+            
+            if (formData.get('price') <= 0) {
+                showToastMessage('Valid price is required', 'error');
+                $('#productPrice').focus();
+                return;
+            }
+            
+            let $btn = $('#submitBtn');
+            $btn.prop('disabled', true).html('<div class="loading-spinner"></div> Adding...');
+            
+            $.ajax({
+                url: '/api/v1/agribusiness/add_product/',
+                method: 'POST',
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    showToastMessage('Product added successfully!', 'success');
+                    setTimeout(function() {
+                        window.location.href = '/agribusiness/products/';
+                    }, 1500);
+                },
+                error: function(xhr) {
+                    var errorMsg = xhr.responseJSON?.error || 'Failed to add product';
+                    showToastMessage(errorMsg, 'error');
+                    $btn.prop('disabled', false).html('Add Product');
+                }
+            });
         });
     });
     
-    function showToast(message, type) {
-        if (window.showToast) window.showToast(message, type);
-        else alert(message);
+    // Non-recursive toast function
+    function showToastMessage(message, type) {
+        var bgColor = type === 'success' ? '#059669' : '#dc2626';
+        
+        // Check if toast already exists and remove it
+        var existingToast = document.getElementById('customToast');
+        if (existingToast) {
+            existingToast.remove();
+        }
+        
+        var toast = document.createElement('div');
+        toast.id = 'customToast';
+        toast.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:' + bgColor + ';color:white;padding:0.75rem 1.5rem;border-radius:2rem;z-index:1100;font-size:0.875rem;box-shadow:0 4px 12px rgba(0,0,0,0.15);';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(function() {
+            if (toast) toast.remove();
+        }, 3000);
     }
     
     function getCookie(name) {
-        let value = null;
-        if (document.cookie) {
-            let cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                let cookie = cookies[i].trim();
+        var value = null;
+        if (document.cookie && document.cookie !== '') {
+            var cookies = document.cookie.split(';');
+            for (var i = 0; i < cookies.length; i++) {
+                var cookie = cookies[i].trim();
                 if (cookie.substring(0, name.length + 1) === (name + '=')) {
                     value = decodeURIComponent(cookie.substring(name.length + 1));
                     break;
