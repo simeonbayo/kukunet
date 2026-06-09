@@ -43,21 +43,107 @@ class RegisterView(generics.CreateAPIView):
             user = serializer.save()
             logger.info(f"User registered successfully: {user.phone_number} (Role: {user.role})")
             
-            # Create tenant for farmer users
+            # Create tenant based on user role
+            from tenants.models import Tenant
+            
+            # Create tenant for FARMER role
             if user.role == 'FARMER':
-                from tenants.models import Tenant
+                tenant_name = f"{user.full_name}'s Farm" if user.full_name else f"Farmer_{user.phone_number}"
                 tenant, created = Tenant.objects.get_or_create(
-                    name=f"{user.full_name}'s Farm",
+                    name=tenant_name,
                     defaults={
-                        'slug': f"farm_{user.id}",
-                        'is_active': True,
-                        'subscription_plan': 'BASIC'
+                        'slug': slugify(tenant_name)[:50],
+                        'tenant_code': f"FARM{user.id}{str(user.id).zfill(4)}",
+                        'subscription_plan': 'BASIC',
+                        'status': 'ACTIVE',
+                        'max_users': 5,
+                        'max_farms': 3,
+                        'is_active': True
                     }
                 )
                 
                 if created:
                     user.tenant = tenant
-                    user.save()
+                    user.save(update_fields=['tenant'])
+                    logger.info(f"Created farmer tenant: {tenant_name} for user {user.phone_number}")
+                else:
+                    logger.info(f"Farmer tenant already exists: {tenant_name}")
+            
+            # Create tenant for ORGANIZATION role
+            elif user.role == 'ORGANIZATION':
+                # Use organization name or create from type
+                if user.organization_name:
+                    tenant_name = user.organization_name
+                else:
+                    org_type_display = dict(user.ORGANIZATION_TYPES).get(user.organization_type, 'Organization')
+                    tenant_name = f"{org_type_display}_{user.phone_number}"
+                
+                # Determine plan based on organization type
+                if user.organization_type == 'AGRIBUSINESS':
+                    subscription_plan = 'PRO'
+                    max_users = 100
+                    max_farms = 50
+                elif user.organization_type == 'COOPERATIVE':
+                    subscription_plan = 'PRO'
+                    max_users = 200
+                    max_farms = 100
+                elif user.organization_type == 'NGO':
+                    subscription_plan = 'NON_PROFIT'
+                    max_users = 50
+                    max_farms = 20
+                elif user.organization_type == 'GOVERNMENT':
+                    subscription_plan = 'ENTERPRISE'
+                    max_users = 500
+                    max_farms = 200
+                elif user.organization_type == 'RESEARCH':
+                    subscription_plan = 'RESEARCH'
+                    max_users = 100
+                    max_farms = 30
+                else:
+                    subscription_plan = 'BASIC'
+                    max_users = 20
+                    max_farms = 10
+                
+                tenant, created = Tenant.objects.get_or_create(
+                    name=tenant_name,
+                    defaults={
+                        'slug': slugify(tenant_name)[:50],
+                        'tenant_code': f"ORG{user.id}{str(user.id).zfill(4)}",
+                        'subscription_plan': subscription_plan,
+                        'status': 'ACTIVE',
+                        'max_users': max_users,
+                        'max_farms': max_farms,
+                        'is_active': True
+                    }
+                )
+                
+                if created:
+                    user.tenant = tenant
+                    user.save(update_fields=['tenant'])
+                    logger.info(f"Created organization tenant: {tenant_name} for {user.organization_type}")
+                else:
+                    # Assign existing tenant if not already assigned
+                    if not user.tenant:
+                        user.tenant = tenant
+                        user.save(update_fields=['tenant'])
+                        logger.info(f"Assigned existing tenant: {tenant_name} to user {user.phone_number}")
+            
+            # For other roles, assign to default tenant or create individual tenant
+            else:
+                # Get or create a default tenant for other roles
+                default_tenant, created = Tenant.objects.get_or_create(
+                    name="Default Tenant",
+                    defaults={
+                        'slug': 'default',
+                        'tenant_code': 'DEFAULT',
+                        'subscription_plan': 'BASIC',
+                        'status': 'ACTIVE',
+                        'is_active': True
+                    }
+                )
+                user.tenant = default_tenant
+                user.save(update_fields=['tenant'])
+                logger.info(f"Assigned default tenant to {user.role} user: {user.phone_number}")
             
             return Response({
                 'success': True,
@@ -67,12 +153,16 @@ class RegisterView(generics.CreateAPIView):
                     'phone_number': user.phone_number,
                     'full_name': user.full_name,
                     'role': user.role,
+                    'organization_type': getattr(user, 'organization_type', None),
+                    'organization_name': getattr(user, 'organization_name', None),
+                    'tenant_id': user.tenant.id if user.tenant else None,
+                    'tenant_name': user.tenant.name if user.tenant else None,
                     'specialization': getattr(user, 'specialization', None),
                 }
             }, status=status.HTTP_201_CREATED)
             
         except Exception as e:
-            logger.error(f"Registration error: {str(e)}")
+            logger.error(f"Registration error: {str(e)}", exc_info=True)
             return Response({
                 'success': False,
                 'message': f'Registration failed: {str(e)}'
