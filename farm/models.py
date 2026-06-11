@@ -721,7 +721,7 @@ class VaccinationSchedule(models.Model):
     bird_type = models.CharField(max_length=20, choices=BIRD_TYPES)
     week_number = models.IntegerField()
     vaccine_name = models.CharField(max_length=100)
-    vaccine_type = models.CharField(max_length=30, choices=VACCINE_TYPES)
+    vaccine_type = models.CharField(max_length=30, choices=VACCINE_TYPES, default='NEWCASTLE')
     administration_method = models.CharField(max_length=50)
     dosage = models.CharField(max_length=100, blank=True)
     is_required = models.BooleanField(default=True)
@@ -757,7 +757,7 @@ class VaccinationRecord(models.Model):
     batch = models.ForeignKey(FlockBatch, on_delete=models.CASCADE, related_name='vaccinations')
     
     
-    vaccine_type = models.CharField(max_length=30, choices=VaccinationSchedule.VACCINE_TYPES)
+    vaccine_type = models.CharField(max_length=30, choices=VaccinationSchedule.VACCINE_TYPES, default='NEWCASTLE')
     manufacturer = models.CharField(max_length=100, blank=True)
     batch_number = models.CharField(max_length=50, blank=True)
     
