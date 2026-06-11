@@ -1,0 +1,326 @@
+<!-- templates/shop/track_order.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Track Order - KUKUNET{% endblock %}
+
+{% block extra_css %}
+<style>
+    .track-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 1rem;
+    }
+    
+    .track-card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e2e8f0;
+    }
+    
+    .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    
+    .order-number {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+    
+    .order-status {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-confirmed { background: #dbeafe; color: #1e40af; }
+    .status-processing { background: #e0e7ff; color: #3730a3; }
+    .status-shipped { background: #cffafe; color: #155e75; }
+    .status-delivered { background: #d1fae5; color: #065f46; }
+    .status-cancelled { background: #fee2e2; color: #991b1b; }
+    
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+        margin: 2rem 0;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+    }
+    
+    .timeline-item:before {
+        content: '';
+        position: absolute;
+        left: -1.5rem;
+        top: 0;
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 50%;
+        background: #cbd5e1;
+        border: 2px solid white;
+        box-shadow: 0 0 0 2px #cbd5e1;
+    }
+    
+    .timeline-item.completed:before {
+        background: #2E7D32;
+        box-shadow: 0 0 0 2px #2E7D32;
+    }
+    
+    .timeline-item:after {
+        content: '';
+        position: absolute;
+        left: -1.125rem;
+        top: 0.75rem;
+        width: 0.125rem;
+        height: calc(100% - 0.75rem);
+        background: #e2e8f0;
+    }
+    
+    .timeline-item:last-child:after {
+        display: none;
+    }
+    
+    .timeline-status {
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #1e293b;
+        margin-bottom: 0.25rem;
+    }
+    
+    .timeline-date {
+        font-size: 0.7rem;
+        color: #64748b;
+    }
+    
+    .timeline-description {
+        font-size: 0.8rem;
+        color: #475569;
+        margin-top: 0.25rem;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+    }
+    
+    .info-label {
+        font-size: 0.7rem;
+        color: #64748b;
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+    }
+    
+    .info-value {
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: #1e293b;
+    }
+    
+    .back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #2E7D32;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        text-decoration: none;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s;
+        margin-bottom: 1rem;
+        border: none;
+        cursor: pointer;
+    }
+    
+    .back-btn:hover {
+        background: #1B5E20;
+    }
+    
+    .loading-spinner {
+        display: inline-block;
+        width: 40px;
+        height: 40px;
+        border: 3px solid #e2e8f0;
+        border-top-color: #2E7D32;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    @media (max-width: 640px) {
+        .info-grid {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+        .order-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="track-container">
+    <button onclick="goBackToOrders()" class="back-btn">
+        <i class="fas fa-arrow-left"></i> Back to My Orders
+    </button>
+    
+    <div id="trackingContent">
+        <div class="track-card text-center py-8">
+            <div class="loading-spinner"></div>
+            <p class="mt-3 text-gray-500">Loading tracking information...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Get order ID from URL - the URL pattern is /orders/4/track/
+    const orderId = window.location.pathname.split('/')[2];
+    
+    console.log('Order ID:', orderId);
+    console.log('Fetching from:', `/api/v1/orders/${orderId}/track/`);
+    
+    function goBackToOrders() {
+        // Directly go to farmer orders page
+        window.location.href = '/farmer/orders/';
+    }
+    
+    fetch(`/api/v1/orders/${orderId}/track/`, {
+        method: 'GET',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Tracking data:', data);
+        displayTracking(data);
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        document.getElementById('trackingContent').innerHTML = `
+            <div class="track-card text-center py-8">
+                <i class="fas fa-exclamation-circle text-4xl text-red-500 mb-3"></i>
+                <p class="text-gray-600">Failed to load tracking information</p>
+                <p class="text-sm text-gray-400 mt-2">Error: ${error.message}</p>
+                <button onclick="location.reload()" class="mt-4 text-green-600">Retry</button>
+            </div>
+        `;
+    });
+    
+    function displayTracking(data) {
+        let statusClass = `status-${(data.status || 'PENDING').toLowerCase()}`;
+        let statusDisplay = (data.status || 'PENDING').charAt(0) + (data.status || 'PENDING').slice(1).toLowerCase();
+        
+        let timelineHtml = '';
+        if (data.timeline && data.timeline.length > 0) {
+            data.timeline.forEach(item => {
+                const completedClass = item.completed ? 'completed' : '';
+                timelineHtml += `
+                    <div class="timeline-item ${completedClass}">
+                        <div class="timeline-status">${item.status}</div>
+                        ${item.date ? `<div class="timeline-date">${new Date(item.date).toLocaleString()}</div>` : ''}
+                        <div class="timeline-description">${item.description}</div>
+                    </div>
+                `;
+            });
+        }
+        
+        let html = `
+            <div class="track-card">
+                <div class="order-header">
+                    <div>
+                        <div class="order-number">Order #${data.order_number}</div>
+                        <div class="text-sm text-gray-500 mt-1">Placed on ${new Date(data.created_at).toLocaleDateString()}</div>
+                    </div>
+                    <div>
+                        <span class="order-status ${statusClass}">${statusDisplay}</span>
+                    </div>
+                </div>
+                
+                <div class="timeline">
+                    ${timelineHtml}
+                </div>
+                
+                <div class="info-grid">
+                    <div>
+                        <div class="info-label">Carrier</div>
+                        <div class="info-value">${data.carrier || 'KUKUNET Logistics'}</div>
+                    </div>
+                    <div>
+                        <div class="info-label">Current Location</div>
+                        <div class="info-value">${data.current_location || 'Processing Center'}</div>
+                    </div>
+                    ${data.tracking_number ? `
+                    <div>
+                        <div class="info-label">Tracking Number</div>
+                        <div class="info-value">${data.tracking_number}</div>
+                    </div>
+                    ` : ''}
+                    ${data.estimated_delivery ? `
+                    <div>
+                        <div class="info-label">Estimated Delivery</div>
+                        <div class="info-value">${new Date(data.estimated_delivery).toLocaleDateString()}</div>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            
+            <div class="track-card text-center">
+                <h3 class="font-semibold mb-2">Need Help?</h3>
+                <p class="text-sm text-gray-600 mb-3">Contact our support team for assistance with your order</p>
+                <a href="/support/" class="text-green-600 text-sm">Contact Support →</a>
+            </div>
+        `;
+        
+        document.getElementById('trackingContent').innerHTML = html;
+    }
+    
+    function getCookie(name) {
+        let value = null;
+        if (document.cookie && document.cookie !== '') {
+            let cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    value = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return value;
+    }
+</script>
+{% endblock %}

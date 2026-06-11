@@ -3,11 +3,124 @@
 
 {% block title %}Farmer Dashboard - KUKUNET{% endblock %}
 
+{% block extra_css %}
+<style>
+    .card {
+        background: white;
+        border-radius: 1rem;
+        padding: 1rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin-bottom: 0.75rem;
+        transition: all 0.2s;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #2E7D32;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    /* Order styles */
+    .order-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #e2e8f0;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .order-item:hover {
+        background: #f8fafc;
+    }
+    
+    .order-item:last-child {
+        border-bottom: none;
+    }
+    
+    .order-info {
+        flex: 1;
+    }
+    
+    .order-number {
+        font-weight: 600;
+        font-size: 0.8rem;
+        color: #1e293b;
+    }
+    
+    .order-date {
+        font-size: 0.65rem;
+        color: #64748b;
+    }
+    
+    .order-total {
+        font-weight: 600;
+        font-size: 0.8rem;
+        color: #2E7D32;
+        margin: 0 1rem;
+    }
+    
+    .order-status {
+        display: inline-block;
+        padding: 0.2rem 0.5rem;
+        border-radius: 9999px;
+        font-size: 0.65rem;
+        font-weight: 600;
+    }
+    
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-confirmed { background: #dbeafe; color: #1e40af; }
+    .status-processing { background: #e0e7ff; color: #3730a3; }
+    .status-shipped { background: #cffafe; color: #155e75; }
+    .status-delivered { background: #d1fae5; color: #065f46; }
+    .status-cancelled { background: #fee2e2; color: #991b1b; }
+    
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+    
+    .section-header h2 {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+    
+    .view-all-link {
+        font-size: 0.7rem;
+        color: #2E7D32;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .view-all-link:hover {
+        text-decoration: underline;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="p-4">
     <!-- Welcome Section -->
     <div class="bg-gradient-to-r from-green-700 to-green-600 text-white rounded-2xl p-5 mb-6">
-        <h1 class="text-2xl font-bold">🐔 Welcome, Farmer {{ user.full_name }}!</h1>
+        <h1 class="text-2xl font-bold">🐔 Welcome, {{ user.full_name|default:user.phone_number }}!</h1>
         <p class="opacity-90 mt-1">Manage your poultry farm efficiently</p>
         <p class="text-sm mt-2" id="currentDate"></p>
     </div>
@@ -52,20 +165,32 @@
                 <i class="fas fa-syringe text-green-600 text-xl"></i>
                 <p class="text-xs mt-1">Vaccinate</p>
             </a>
-            <a href="/marketplace/" class="bg-white p-3 rounded-xl text-center shadow-sm">
+            <a href="{% url 'frontend:shop' %}" class="bg-white p-3 rounded-xl text-center shadow-sm">
                 <i class="fas fa-store text-green-600 text-xl"></i>
                 <p class="text-xs mt-1">Marketplace</p>
             </a>
         </div>
     </div>
     
+    <!-- Recent Orders Section -->
+    <div class="mb-6">
+        <div class="section-header">
+            <h2><i class="fas fa-shopping-cart text-green-600 mr-2"></i>Recent Orders</h2>
+            <a href="{% url 'frontend:farmer_orders' %}" class="view-all-link">View All →</a>
+        </div>
+        <div id="recentOrdersList">
+            <div class="card text-center py-4">
+                <div class="spinner mx-auto"></div>
+                <p class="text-gray-500 mt-2">Loading orders...</p>
+            </div>
+        </div>
+    </div>
+    
     <!-- My Farms Section -->
     <div class="mb-6">
-        <div class="flex justify-between items-center mb-3">
-            <h2 class="text-lg font-bold">
-                <i class="fas fa-tractor text-green-600 mr-2"></i>My Farms
-            </h2>
-            <a href="/farm/" class="text-green-600 text-sm">View All →</a>
+        <div class="section-header">
+            <h2><i class="fas fa-tractor text-green-600 mr-2"></i>My Farms</h2>
+            <a href="/farm/" class="view-all-link">View All →</a>
         </div>
         <div id="farmsList" class="space-y-2">
             <div class="text-center py-4">
@@ -77,11 +202,9 @@
     
     <!-- Active Flocks -->
     <div class="mb-6">
-        <div class="flex justify-between items-center mb-3">
-            <h2 class="text-lg font-bold">
-                <i class="fas fa-chicken text-green-600 mr-2"></i>Active Flocks
-            </h2>
-            <a href="/farm/flocks/" class="text-green-600 text-sm">View All →</a>
+        <div class="section-header">
+            <h2><i class="fas fa-chicken text-green-600 mr-2"></i>Active Flocks</h2>
+            <a href="/farm/flocks/" class="view-all-link">View All →</a>
         </div>
         <div id="flocksList" class="space-y-2">
             <div class="text-center py-4">
@@ -134,6 +257,120 @@ let allFarms = [];
 let allFlocks = [];
 let farmBirdCounts = {};
 
+// Load Recent Orders
+function loadRecentOrders() {
+    console.log('Loading recent orders...');
+    
+    $('#recentOrdersList').html(`
+        <div class="card text-center py-4">
+            <div class="spinner mx-auto"></div>
+            <p class="text-gray-500 mt-2">Loading orders...</p>
+        </div>
+    `);
+    
+    fetch('/api/v1/orders/', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+            'X-CSRFToken': getCSRFToken(),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => {
+        if (response.status === 401) {
+            window.location.href = '/login/';
+            return;
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Orders API response:', data);
+        
+        let orders = [];
+        if (data && data.results) {
+            orders = data.results;
+        } else if (data && Array.isArray(data)) {
+            orders = data;
+        }
+        
+        displayRecentOrders(orders);
+    })
+    .catch(error => {
+        console.error('Error loading orders:', error);
+        $('#recentOrdersList').html(`
+            <div class="card text-center py-4">
+                <i class="fas fa-exclamation-circle text-3xl text-red-400 mb-2"></i>
+                <p class="text-gray-500">Error loading orders</p>
+                <button onclick="loadRecentOrders()" class="text-green-600 text-sm mt-2">Retry</button>
+            </div>
+        `);
+    });
+}
+
+function displayRecentOrders(orders) {
+    if (!orders || orders.length === 0) {
+        $('#recentOrdersList').html(`
+            <div class="card text-center py-4">
+                <i class="fas fa-shopping-cart text-3xl text-gray-300 mb-2"></i>
+                <p class="text-gray-500">No orders yet</p>
+                <a href="{% url 'frontend:shop' %}" class="inline-block mt-2 text-green-600 text-sm">
+                    Start Shopping →
+                </a>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = '<div class="card p-0 overflow-hidden">';
+    const recentOrders = orders.slice(0, 5);
+    
+    recentOrders.forEach(order => {
+        let status = order.status || 'PENDING';
+        let statusClass = `status-${status.toLowerCase()}`;
+        let statusDisplay = status.charAt(0) + status.slice(1).toLowerCase();
+        
+        let orderDate = 'N/A';
+        if (order.created_at) {
+            try {
+                orderDate = new Date(order.created_at).toLocaleDateString();
+            } catch(e) {
+                orderDate = String(order.created_at);
+            }
+        }
+        
+        html += `
+            <div class="order-item" onclick="viewOrder(${order.id})">
+                <div class="order-info">
+                    <div class="order-number">#${order.order_number || order.id}</div>
+                    <div class="order-date">${orderDate}</div>
+                </div>
+                <div class="order-total">UGX ${formatNumber(order.total || 0)}</div>
+                <div>
+                    <span class="order-status ${statusClass}">${statusDisplay}</span>
+                </div>
+            </div>
+        `;
+    });
+    
+    if (orders.length > 5) {
+        html += `<div class="text-center py-2 border-t border-gray-100">
+                    <a href="{% url 'frontend:farmer_orders' %}" class="text-green-600 text-sm">View all ${orders.length} orders →</a>
+                 </div>`;
+    }
+    
+    html += '</div>';
+    $('#recentOrdersList').html(html);
+}
+
+function viewOrder(orderId) {
+    window.location.href = `/orders/${orderId}/`;
+}
+
+function formatNumber(num) {
+    if (!num) return '0';
+    return Math.round(num).toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,');
+}
+
 // Load farms
 function loadFarms() {
     fetch('/api/v1/farms/farms/', {
@@ -185,7 +422,6 @@ function displayFarms(farms) {
     
     let html = '';
     farms.slice(0, 2).forEach(farm => {
-        // Get bird count from flocks data if available, otherwise use farm.total_birds
         const birdCount = farmBirdCounts[farm.id] !== undefined ? farmBirdCounts[farm.id] : (farm.total_birds || 0);
         
         html += `
@@ -226,11 +462,9 @@ function loadFlocks() {
     .then(flocks => {
         if (flocks && Array.isArray(flocks)) {
             allFlocks = flocks;
-            // Calculate bird counts per farm from flocks
             calculateFarmBirdCounts(flocks);
             displayFlocks(flocks);
             updateStatsFromFlocks(flocks);
-            // Refresh farm display with updated bird counts
             if (allFarms.length > 0) {
                 displayFarms(allFarms);
             }
@@ -252,7 +486,6 @@ function loadFlocks() {
 }
 
 function calculateFarmBirdCounts(flocks) {
-    // Reset farm bird counts
     farmBirdCounts = {};
     
     flocks.forEach(flock => {
@@ -265,8 +498,6 @@ function calculateFarmBirdCounts(flocks) {
             farmBirdCounts[farmId] = birdCount;
         }
     });
-    
-    console.log('Farm bird counts calculated:', farmBirdCounts);
 }
 
 function displayFlocks(flocks) {
@@ -324,7 +555,6 @@ function displayFlocks(flocks) {
 
 // Update stats directly from flocks data
 function updateStatsFromFlocks(flocks) {
-    // Calculate total birds from all flocks
     let totalBirds = 0;
     let totalEggs = 0;
     let totalMortality = 0;
@@ -337,15 +567,12 @@ function updateStatsFromFlocks(flocks) {
         flockCount++;
     });
     
-    // Update UI
     $('#totalBirds').text(totalBirds);
     $('#todayEggs').text(Math.round(totalEggs));
     
     if (flockCount > 0) {
         $('#mortalityRate').text(Math.round(totalMortality / flockCount) + '%');
     }
-    
-    console.log(`Stats updated: ${totalBirds} total birds from ${flockCount} flocks`);
 }
 
 // Load dashboard analytics
@@ -413,26 +640,10 @@ function escapeHtml(text) {
 
 // Initialize dashboard
 $(document).ready(function() {
+    loadRecentOrders();
     loadFarms();
     loadFlocks();
     loadDashboardAnalytics();
 });
 </script>
-
-<style>
-.spinner {
-    border: 3px solid #f3f3f3;
-    border-top: 3px solid #2E7D32;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    margin: 0 auto;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-</style>
 {% endblock %}

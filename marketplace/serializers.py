@@ -1,5 +1,6 @@
 # marketplace/serializers.py
 from rest_framework import serializers
+from django.db import models
 from .models import (
     Product, ProductCategory, Cart, CartItem, Order, OrderItem,
     ProductReview, Promotion, PaymentTransaction, ShippingMethod, Invoice
@@ -67,22 +68,28 @@ class OrderItemSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = OrderItem
-        fields = ['id', 'product', 'product_name', 'product_image', 
-                 'quantity', 'price', 'subtotal']
+        fields = ['id', 'product', 'product_name', 'product_image', 'quantity', 'price', 'subtotal']
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     user_name = serializers.CharField(source='user.get_full_name', read_only=True)
+    user_phone = serializers.CharField(source='user.phone_number', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+    total_items = serializers.SerializerMethodField()  # Add this field
     
     class Meta:
         model = Order
         fields = [
-            'id', 'order_number', 'user', 'user_name', 'status', 'status_display',
+            'id', 'order_number', 'user', 'user_name', 'user_phone', 'status', 'status_display',
             'payment_status', 'payment_method', 'subtotal', 'tax', 'shipping_cost',
             'discount', 'total', 'shipping_address', 'shipping_city', 'shipping_state',
-            'shipping_zip', 'shipping_phone', 'items', 'created_at', 'paid_at', 'delivered_at'
+            'shipping_zip', 'shipping_phone', 'customer_notes', 'items', 'total_items',
+            'created_at', 'updated_at', 'paid_at', 'delivered_at'
         ]
+    
+    def get_total_items(self, obj):
+        """Calculate total number of items in the order"""
+        return obj.items.aggregate(total=models.Sum('quantity'))['total'] or 0
 
 class ShippingMethodSerializer(serializers.ModelSerializer):
     class Meta:

@@ -65,6 +65,27 @@
         color: #64748b;
     }
     
+    /* Back Button */
+    .back-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: none;
+        border: none;
+        color: #2E7D32;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        margin-bottom: 1rem;
+        padding: 0.5rem 0;
+        transition: all 0.2s;
+    }
+    
+    .back-button:hover {
+        color: #1B5E20;
+        transform: translateX(-4px);
+    }
+    
     /* Order Items */
     .order-item {
         display: flex;
@@ -190,6 +211,7 @@
         font-weight: 600;
         font-size: 0.875rem;
         transition: all 0.2s;
+        text-align: center;
     }
     
     .continue-shopping:hover {
@@ -224,6 +246,19 @@
 
 {% block content %}
 <div class="order-container">
+    <!-- Back Button - Link to recent orders -->
+    <div>
+        {% if request.user.role == 'FARMER' %}
+            <button onclick="goBackToOrders()" class="back-button">
+                <i class="fas fa-arrow-left"></i> Back to My Orders
+            </button>
+        {% else %}
+            <button onclick="window.history.back()" class="back-button">
+                <i class="fas fa-arrow-left"></i> Go Back
+            </button>
+        {% endif %}
+    </div>
+    
     <div class="order-layout">
         <!-- Left Column - Order Details -->
         <div>
@@ -294,6 +329,12 @@
                     <div class="timeline-item">
                         <div class="timeline-status">Order Delivered</div>
                         <div class="timeline-date">{{ order.delivered_at|date:"F j, Y"|default:order.updated_at|date:"F j, Y" }}</div>
+                    </div>
+                    {% endif %}
+                    {% if order.status == 'CANCELLED' %}
+                    <div class="timeline-item">
+                        <div class="timeline-status">Order Cancelled</div>
+                        <div class="timeline-date">{{ order.updated_at|date:"F j, Y" }}</div>
                     </div>
                     {% endif %}
                 </div>
@@ -374,7 +415,7 @@
                     Cancel Order
                 </button>
                 {% endif %}
-                <a href="/shop/" class="continue-shopping w-full text-center block">
+                <a href="{% url 'frontend:shop' %}" class="continue-shopping w-full block">
                     Continue Shopping →
                 </a>
             </div>
@@ -383,6 +424,11 @@
 </div>
 
 <script>
+    function goBackToOrders() {
+        // For farmers, go back to their orders page
+        window.location.href = "{% url 'frontend:farmer_orders' %}";
+    }
+    
     function cancelOrder(orderId) {
         if (confirm('Are you sure you want to cancel this order?')) {
             $.ajax({

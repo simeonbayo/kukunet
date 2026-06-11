@@ -18,7 +18,7 @@ class Farm(models.Model):
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE, related_name='farms')
     farm_name = models.CharField(max_length=100)
     farm_type = models.CharField(max_length=20, choices=FARM_TYPES, default='LAYERS')
-    registration_number = models.CharField(max_length=50, blank=True, unique=True)
+    registration_number = models.CharField(max_length=50, blank=True,null=True, unique=False)
     
     # Location
     district = models.CharField(max_length=100)

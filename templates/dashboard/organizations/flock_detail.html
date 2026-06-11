@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flock Details - KUKUNET</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .status-PLANNED { background-color: #fef3c7; color: #d97706; }
+        .status-ACTIVE { background-color: #d1fae5; color: #059669; }
+        .status-COMPLETED { background-color: #dbeafe; color: #2563eb; }
+        .status-SICK { background-color: #fee2e2; color: #dc2626; }
+        .status-CULLED { background-color: #fed7aa; color: #9a3412; }
+        .loading {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #10b981;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .tab-active {
+            border-bottom: 2px solid #10b981;
+            color: #10b981;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <div class="bg-white shadow">
+            <div class="container mx-auto px-4 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <a href="/organization/ngo/" class="text-gray-600 hover:text-green-600 transition">
+                            <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                        </a>
+                        <div class="h-6 w-px bg-gray-300"></div>
+                        <a href="#" onclick="goToFlockManagement()" class="text-gray-600 hover:text-green-600 transition">
+                            <i class="fas fa-dove mr-2"></i>Flock Management
+                        </a>
+                        <div class="h-6 w-px bg-gray-300"></div>
+                        <h1 class="text-xl font-bold text-gray-800">
+                            <i class="fas fa-chart-line text-green-600 mr-2"></i>Flock Details
+                        </h1>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-hand-holding-heart text-green-600 text-sm"></i>
+                        </div>
+                        <span class="text-sm text-gray-600">KUKUNET NGO</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="container mx-auto px-4 py-6">
+            <div id="flockContent">
+                <div class="text-center py-12">
+                    <div class="loading mx-auto mb-4"></div>
+                    <p class="text-gray-500">Loading flock details...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let performanceChart;
+        
+        // Get flock ID from URL
+        const pathParts = window.location.pathname.split('/');
+        const flockId = pathParts[pathParts.length - 2];
+        
+        // Function to go to flock management section
+        function goToFlockManagement() {
+            // Store the current section in sessionStorage
+            sessionStorage.setItem('activeSection', 'flocks');
+            // Navigate back to NGO dashboard
+            window.location.href = '/organization/ngo/';
+        }
+        
+        async function loadFlockDetails() {
+            try {
+                const response = await fetch(`/api/v1/organization/flocks/${flockId}/`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayFlockDetails(data);
+                } else {
+                    displayError(data.message || 'Failed to load flock details');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                displayError('Network error. Please try again.');
+            }
+        }
+        
+        function displayFlockDetails(data) {
+            const flock = data.flock;
+            const records = data.daily_records || [];
+            const healthRecords = data.health_records || [];
+            const vaccinations = data.vaccination_records || [];
+            const summary = data.summary || {};
+            
+            const formatCurrency = (amount) => `UGX ${(amount || 0).toLocaleString()}`;
+            const formatNumber = (num) => (num || 0).toLocaleString();
+            
+            const html = `
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
+                    <!-- Header -->
+                    <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-2xl font-bold text-white">${escapeHtml(flock.batch_name)}</h2>
+                                <p class="text-blue-100 mt-1">
+                                    <i class="fas fa-tag mr-1"></i>Batch #: ${flock.batch_number}
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <span class="status-badge status-${flock.status} text-sm">
+                                    ${flock.status_display}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <!-- Action Buttons -->
+                        <div class="flex justify-end space-x-3 mb-4">
+                            <button onclick="goToFlockManagement()" class="bg-gray-500 text-white px-3 py-1 rounded text-sm hover:bg-gray-600">
+                                <i class="fas fa-arrow-left mr-1"></i>Back to Flocks
+                            </button>
+                            <button onclick="window.location.href='/organization/ngo/'" class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                                <i class="fas fa-home mr-1"></i>Dashboard
+                            </button>
+                        </div>
+                        
+                        <!-- Basic Information -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                            <div class="bg-gray-50 p-3 rounded">
+                                <p class="text-sm text-gray-500">Farmer</p>
+                                <p class="font-medium">${escapeHtml(flock.farmer_name)}</p>
+                                <button onclick="viewFarmer(${flock.farmer_id})" class="text-xs text-blue-600 hover:text-blue-800 mt-1">
+                                    <i class="fas fa-external-link-alt mr-1"></i>View Farmer
+                                </button>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded">
+                                <p class="text-sm text-gray-500">Farm</p>
+                                <p class="font-medium">${escapeHtml(flock.farm_name)}</p>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded">
+                                <p class="text-sm text-gray-500">Bird Type / Breed</p>
+                                <p class="font-medium">${flock.bird_type} / ${flock.breed}</p>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded">
+                                <p class="text-sm text-gray-500">Source</p>
+                                <p class="font-medium">${flock.source}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Population Stats -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                            <div class="bg-green-50 p-3 rounded text-center">
+                                <p class="text-sm text-green-600">Initial Quantity</p>
+                                <p class="text-2xl font-bold text-green-700">${formatNumber(flock.initial_quantity)}</p>
+                            </div>
+                            <div class="bg-blue-50 p-3 rounded text-center">
+                                <p class="text-sm text-blue-600">Current Quantity</p>
+                                <p class="text-2xl font-bold text-blue-700">${formatNumber(flock.current_quantity)}</p>
+                            </div>
+                            <div class="bg-red-50 p-3 rounded text-center">
+                                <p class="text-sm text-red-600">Mortality Rate</p>
+                                <p class="text-2xl font-bold text-red-700">${flock.mortality_rate}%</p>
+                            </div>
+                            <div class="bg-purple-50 p-3 rounded text-center">
+                                <p class="text-sm text-purple-600">Survival Rate</p>
+                                <p class="text-2xl font-bold text-purple-700">${flock.survival_rate}%</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Age and Dates -->
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+                            <div class="bg-gray-50 p-3 rounded">
+                                <p class="text-sm text-gray-500">Age</p>
+                                <p class="font-medium">${flock.age_weeks} weeks (${flock.age_days} days)</p>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded">
+                                <p class="text-sm text-gray-500">Start Date</p>
+                                <p class="font-medium">${flock.start_date}</p>
+                            </div>
+                            <div class="bg-gray-50 p-3 rounded">
+                                <p class="text-sm text-gray-500">Expected End Date</p>
+                                <p class="font-medium">${flock.expected_end_date}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Performance Metrics -->
+                        <div class="border-t pt-6 mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                                <i class="fas fa-chart-line text-blue-600 mr-2"></i>Performance Metrics
+                            </h3>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="bg-yellow-50 p-3 rounded text-center">
+                                    <p class="text-sm text-yellow-600">Total Feed Consumed</p>
+                                    <p class="text-xl font-bold text-yellow-700">${formatNumber(flock.total_feed_consumed)} kg</p>
+                                </div>
+                                <div class="bg-orange-50 p-3 rounded text-center">
+                                    <p class="text-sm text-orange-600">Total Eggs Produced</p>
+                                    <p class="text-xl font-bold text-orange-700">${formatNumber(flock.total_eggs_produced)}</p>
+                                </div>
+                                <div class="bg-teal-50 p-3 rounded text-center">
+                                    <p class="text-sm text-teal-600">Avg Daily Eggs</p>
+                                    <p class="text-xl font-bold text-teal-700">${flock.avg_daily_eggs}</p>
+                                </div>
+                                <div class="bg-indigo-50 p-3 rounded text-center">
+                                    <p class="text-sm text-indigo-600">Feed Conversion Ratio</p>
+                                    <p class="text-xl font-bold text-indigo-700">${flock.feed_conversion_ratio}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Financial Summary -->
+                        <div class="border-t pt-6 mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                                <i class="fas fa-chart-pie text-green-600 mr-2"></i>Financial Summary
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div class="bg-green-50 p-3 rounded text-center">
+                                    <p class="text-sm text-green-600">Total Revenue</p>
+                                    <p class="text-xl font-bold text-green-700">${formatCurrency(summary.total_revenue)}</p>
+                                </div>
+                                <div class="bg-red-50 p-3 rounded text-center">
+                                    <p class="text-sm text-red-600">Total Expenses</p>
+                                    <p class="text-xl font-bold text-red-700">${formatCurrency(summary.total_expenses)}</p>
+                                </div>
+                                <div class="bg-purple-50 p-3 rounded text-center">
+                                    <p class="text-sm text-purple-600">Net Profit</p>
+                                    <p class="text-xl font-bold text-purple-700">${formatCurrency(summary.net_profit)}</p>
+                                </div>
+                                <div class="bg-blue-50 p-3 rounded text-center">
+                                    <p class="text-sm text-blue-600">Cost per Bird</p>
+                                    <p class="text-xl font-bold text-blue-700">${formatCurrency(flock.cost_per_bird)}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Tabs for Records -->
+                        <div class="border-t pt-6">
+                            <div class="border-b mb-4">
+                                <nav class="flex space-x-4">
+                                    <button onclick="showTab('daily')" id="tab-daily" class="tab-btn px-4 py-2 text-sm font-medium text-green-600 border-b-2 border-green-600">
+                                        <i class="fas fa-calendar-day mr-1"></i>Daily Records
+                                    </button>
+                                    <button onclick="showTab('health')" id="tab-health" class="tab-btn px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700">
+                                        <i class="fas fa-heartbeat mr-1"></i>Health Records
+                                    </button>
+                                    <button onclick="showTab('vaccinations')" id="tab-vaccinations" class="tab-btn px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700">
+                                        <i class="fas fa-syringe mr-1"></i>Vaccinations
+                                    </button>
+                                </nav>
+                            </div>
+                            
+                            <!-- Daily Records Tab -->
+                            <div id="daily-tab" class="tab-content">
+                                ${records.length > 0 ? `
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full bg-white border rounded-lg">
+                                            <thead class="bg-gray-50">
+                                                <tr>
+                                                    <th class="px-3 py-2 text-left text-sm">Date</th>
+                                                    <th class="px-3 py-2 text-center text-sm">Opening</th>
+                                                    <th class="px-3 py-2 text-center text-sm">Mortality</th>
+                                                    <th class="px-3 py-2 text-center text-sm">Sold</th>
+                                                    <th class="px-3 py-2 text-center text-sm">Closing</th>
+                                                    <th class="px-3 py-2 text-right text-sm">Feed (kg)</th>
+                                                    <th class="px-3 py-2 text-center text-sm">Eggs</th>
+                                                    <th class="px-3 py-2 text-right text-sm">Revenue</th>
+                                                    <th class="px-3 py-2 text-right text-sm">Expenses</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${records.map(record => `
+                                                    <tr class="border-t hover:bg-gray-50">
+                                                        <td class="px-3 py-2 text-sm">${record.date}</td>
+                                                        <td class="px-3 py-2 text-center">${record.opening_bird_count}</td>
+                                                        <td class="px-3 py-2 text-center text-red-600">${record.mortality}</td>
+                                                        <td class="px-3 py-2 text-center">${record.birds_sold}</td>
+                                                        <td class="px-3 py-2 text-center">${record.closing_bird_count}</td>
+                                                        <td class="px-3 py-2 text-right">${record.feed_consumed_kg}</td>
+                                                        <td class="px-3 py-2 text-center">${record.eggs_collected}</td>
+                                                        <td class="px-3 py-2 text-right text-green-600">${formatCurrency(record.sales_revenue)}</td>
+                                                        <td class="px-3 py-2 text-right text-red-600">${formatCurrency(record.total_expenses)}</td>
+                                                    </tr>
+                                                `).join('')}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ` : '<p class="text-gray-500 text-center py-4">No daily records found</p>'}
+                            </div>
+                            
+                            <!-- Health Records Tab -->
+                            <div id="health-tab" class="tab-content hidden">
+                                ${healthRecords.length > 0 ? `
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full bg-white border rounded-lg">
+                                            <thead class="bg-gray-50">
+                                                <tr>
+                                                    <th class="px-3 py-2 text-left">Date</th>
+                                                    <th class="px-3 py-2 text-left">Health Status</th>
+                                                    <th class="px-3 py-2 text-left">Disease Type</th>
+                                                    <th class="px-3 py-2 text-center">Affected Birds</th>
+                                                    <th class="px-3 py-2 text-left">Symptoms</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${healthRecords.map(record => `
+                                                    <tr class="border-t hover:bg-gray-50">
+                                                        <td class="px-3 py-2">${record.date}</td>
+                                                        <td class="px-3 py-2">${record.health_status}</td>
+                                                        <td class="px-3 py-2">${record.disease_type}</td>
+                                                        <td class="px-3 py-2 text-center">${record.affected_birds}</td>
+                                                        <td class="px-3 py-2">${record.symptoms}</td>
+                                                    </tr>
+                                                `).join('')}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ` : '<p class="text-gray-500 text-center py-4">No health records found</p>'}
+                            </div>
+                            
+                            <!-- Vaccinations Tab -->
+                            <div id="vaccinations-tab" class="tab-content hidden">
+                                ${vaccinations.length > 0 ? `
+                                    <div class="overflow-x-auto">
+                                        <table class="min-w-full bg-white border rounded-lg">
+                                            <thead class="bg-gray-50">
+                                                <tr>
+                                                    <th class="px-3 py-2 text-left">Vaccine</th>
+                                                    <th class="px-3 py-2 text-left">Scheduled Date</th>
+                                                    <th class="px-3 py-2 text-left">Administered Date</th>
+                                                    <th class="px-3 py-2 text-center">Status</th>
+                                                    <th class="px-3 py-2 text-left">Administered By</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                ${vaccinations.map(vac => `
+                                                    <tr class="border-t hover:bg-gray-50">
+                                                        <td class="px-3 py-2">${vac.vaccine_type}</td>
+                                                        <td class="px-3 py-2">${vac.scheduled_date}</td>
+                                                        <td class="px-3 py-2">${vac.administered_date}</td>
+                                                        <td class="px-3 py-2 text-center">
+                                                            <span class="status-badge ${vac.status === 'COMPLETED' ? 'status-ACTIVE' : 'status-PLANNED'}">
+                                                                ${vac.status}
+                                                            </span>
+                                                        </td>
+                                                        <td class="px-3 py-2">${vac.administered_by}</td>
+                                                    </tr>
+                                                `).join('')}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ` : '<p class="text-gray-500 text-center py-4">No vaccination records found</p>'}
+                            </div>
+                        </div>
+                        
+                        <!-- Notes -->
+                        ${flock.notes ? `
+                            <div class="border-t pt-6 mt-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-2">
+                                    <i class="fas fa-sticky-note text-gray-600 mr-2"></i>Notes
+                                </h3>
+                                <p class="text-gray-600 bg-gray-50 p-3 rounded">${escapeHtml(flock.notes)}</p>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('flockContent').innerHTML = html;
+        }
+        
+        function viewFarmer(farmerId) {
+            window.location.href = `/organizations/farmers/${farmerId}/`;
+        }
+        
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('text-green-600', 'border-b-2', 'border-green-600');
+                btn.classList.add('text-gray-500');
+            });
+            
+            // Show selected tab
+            document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+            
+            // Add active class to clicked button
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            activeBtn.classList.add('text-green-600', 'border-b-2', 'border-green-600');
+            activeBtn.classList.remove('text-gray-500');
+        }
+        
+        function displayError(message) {
+            document.getElementById('flockContent').innerHTML = `
+                <div class="bg-white rounded-lg shadow-lg p-8 text-center">
+                    <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Error Loading Flock Details</h3>
+                    <p class="text-gray-600 mb-4">${escapeHtml(message)}</p>
+                    <a href="/organization/ngo/" class="inline-block bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            `;
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Load flock details on page load
+        loadFlockDetails();
+    </script>
+</body>
+</html>

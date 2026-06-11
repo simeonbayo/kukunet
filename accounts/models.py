@@ -84,6 +84,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     pin_hash = models.CharField(max_length=128, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='FARMER')
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
+
+    # Organization join code (for farmers to join an existing organization)
+    organization_join_code = models.CharField(max_length=20, blank=True, help_text="Tenant code to join an organization")
     
     # Field Officer specific fields
     specialization = models.CharField(max_length=100, blank=True, help_text="e.g., Poultry Vet, Livestock Extension")

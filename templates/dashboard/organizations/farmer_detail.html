@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Farmer Details - {{ farmer.full_name }} | KUKUNET</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .status-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .status-PLANNED { background-color: #fef3c7; color: #d97706; }
+        .status-ACTIVE { background-color: #d1fae5; color: #059669; }
+        .status-COMPLETED { background-color: #dbeafe; color: #2563eb; }
+        .status-SICK { background-color: #fee2e2; color: #dc2626; }
+        .status-CULLED { background-color: #fed7aa; color: #9a3412; }
+        .status-DEPLETED { background-color: #e5e7eb; color: #4b5563; }
+        .loading {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #10b981;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <div class="bg-white shadow">
+            <div class="container mx-auto px-4 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <a href="/organization/ngo/" class="text-gray-600 hover:text-green-600 transition">
+                            <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                        </a>
+                        <div class="h-6 w-px bg-gray-300"></div>
+                        <h1 class="text-xl font-bold text-gray-800">
+                            <i class="fas fa-user text-green-600 mr-2"></i>Farmer Details
+                        </h1>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-hand-holding-heart text-green-600 text-sm"></i>
+                        </div>
+                        <span class="text-sm text-gray-600">KUKUNET NGO</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="container mx-auto px-4 py-6">
+            <div id="farmerContent">
+                <!-- Loading State -->
+                <div class="text-center py-12">
+                    <div class="loading mx-auto mb-4"></div>
+                    <p class="text-gray-500">Loading farmer details...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get farmer ID from URL
+        const pathParts = window.location.pathname.split('/');
+        const farmerId = pathParts[pathParts.length - 2];
+        
+        async function loadFarmerDetails() {
+            try {
+                const response = await fetch(`/api/v1/organization/farmers/${farmerId}/`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayFarmerDetails(data);
+                } else {
+                    displayError(data.message || 'Failed to load farmer details');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                displayError('Network error. Please try again.');
+            }
+        }
+        
+        function displayFarmerDetails(data) {
+            const farmer = data.farmer;
+            const flocks = data.flocks || [];
+            const financial = data.financial_summary || {};
+            
+            // Helper function to format currency
+            const formatCurrency = (amount) => {
+                return `UGX ${(amount || 0).toLocaleString()}`;
+            };
+            
+            const html = `
+                <!-- Farmer Profile Card -->
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
+                    <div class="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-2xl font-bold text-white">${escapeHtml(farmer.full_name)}</h2>
+                                <p class="text-green-100 mt-1">
+                                    <i class="fas fa-calendar-alt mr-1"></i>Registered: ${farmer.registered_date}
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <span class="px-3 py-1 rounded-full text-sm font-semibold ${farmer.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                    <i class="fas ${farmer.is_active ? 'fa-check-circle' : 'fa-times-circle'} mr-1"></i>
+                                    ${farmer.is_active ? 'Active' : 'Inactive'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6">
+                        <!-- Contact Information -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800 mb-3">
+                                    <i class="fas fa-address-card text-green-600 mr-2"></i>Contact Information
+                                </h3>
+                                <div class="space-y-2">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-phone w-6 text-gray-400"></i>
+                                        <span class="text-gray-700">${farmer.phone_number}</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <i class="fas fa-envelope w-6 text-gray-400"></i>
+                                        <span class="text-gray-700">${farmer.email || 'Not provided'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-800 mb-3">
+                                    <i class="fas fa-map-marker-alt text-green-600 mr-2"></i>Location
+                                </h3>
+                                <div class="space-y-2">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-city w-6 text-gray-400"></i>
+                                        <span class="text-gray-700">District: ${farmer.district || 'Not specified'}</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <i class="fas fa-home w-6 text-gray-400"></i>
+                                        <span class="text-gray-700">Village: ${farmer.village || 'Not specified'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Financial Summary -->
+                        <div class="border-t pt-6 mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                                <i class="fas fa-chart-line text-green-600 mr-2"></i>Financial Summary
+                            </h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div class="bg-green-50 rounded-lg p-4 text-center">
+                                    <p class="text-sm text-green-600 mb-1">Total Revenue</p>
+                                    <p class="text-2xl font-bold text-green-700">${formatCurrency(financial.total_revenue)}</p>
+                                </div>
+                                <div class="bg-red-50 rounded-lg p-4 text-center">
+                                    <p class="text-sm text-red-600 mb-1">Total Expenses</p>
+                                    <p class="text-2xl font-bold text-red-700">${formatCurrency(financial.total_expenses)}</p>
+                                </div>
+                                <div class="bg-purple-50 rounded-lg p-4 text-center">
+                                    <p class="text-sm text-purple-600 mb-1">Net Profit</p>
+                                    <p class="text-2xl font-bold text-purple-700">${formatCurrency(financial.net_profit)}</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Flocks Section -->
+                        <div class="border-t pt-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-semibold text-gray-800">
+                                    <i class="fas fa-dove text-green-600 mr-2"></i>Flocks (${flocks.length})
+                                </h3>
+                                <button onclick="window.location.href='/organization/ngo/'" class="text-sm text-green-600 hover:text-green-800">
+                                    <i class="fas fa-arrow-left mr-1"></i>Back to Dashboard
+                                </button>
+                            </div>
+                            
+                            ${flocks.length > 0 ? `
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full bg-white border rounded-lg">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Batch Name</th>
+                                                <th class="px-4 py-3 text-left text-sm font-semibold text-gray-600">Bird Type</th>
+                                                <th class="px-4 py-3 text-center text-sm font-semibold text-gray-600">Status</th>
+                                                <th class="px-4 py-3 text-center text-sm font-semibold text-gray-600">Initial Qty</th>
+                                                <th class="px-4 py-3 text-center text-sm font-semibold text-gray-600">Current Qty</th>
+                                                <th class="px-4 py-3 text-center text-sm font-semibold text-gray-600">Age</th>
+                                                <th class="px-4 py-3 text-center text-sm font-semibold text-gray-600">Start Date</th>
+                                                <th class="px-4 py-3 text-center text-sm font-semibold text-gray-600">Total Eggs</th>
+                                                <th class="px-4 py-3 text-center text-sm font-semibold text-gray-600">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${flocks.map(flock => `
+                                                <tr class="border-t hover:bg-gray-50">
+                                                    <td class="px-4 py-3 font-medium">${escapeHtml(flock.batch_name)}</td>
+                                                    <td class="px-4 py-3">${escapeHtml(flock.bird_type)}</td>
+                                                    <td class="px-4 py-3 text-center">
+                                                        <span class="status-badge status-${flock.status}">
+                                                            ${flock.status}
+                                                        </span>
+                                                    </td>
+                                                    <td class="px-4 py-3 text-center">${flock.initial_quantity}</td>
+                                                    <td class="px-4 py-3 text-center">${flock.current_quantity}</td>
+                                                    <td class="px-4 py-3 text-center">${flock.age_weeks} wks</td>
+                                                    <td class="px-4 py-3 text-center">${flock.start_date}</td>
+                                                    <td class="px-4 py-3 text-center">${flock.total_eggs || 0}</td>
+                                                    <td class="px-4 py-3 text-center">
+                                                        <button onclick="viewFlock(${flock.id})" class="text-blue-600 hover:text-blue-800">
+                                                            <i class="fas fa-chart-line"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ` : `
+                                <div class="text-center py-8 bg-gray-50 rounded-lg">
+                                    <i class="fas fa-dove text-4xl text-gray-300 mb-2"></i>
+                                    <p class="text-gray-500">No flocks found for this farmer</p>
+                                    <p class="text-sm text-gray-400 mt-1">Flocks will appear here once added</p>
+                                </div>
+                            `}
+                        </div>
+                        
+                        <!-- Quick Stats -->
+                        <div class="border-t pt-6 mt-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                                <i class="fas fa-chart-pie text-green-600 mr-2"></i>Quick Statistics
+                            </h3>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div class="text-center">
+                                    <p class="text-2xl font-bold text-blue-600">${flocks.length}</p>
+                                    <p class="text-sm text-gray-500">Total Flocks</p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-2xl font-bold text-green-600">${flocks.reduce((sum, f) => sum + (f.current_quantity || 0), 0)}</p>
+                                    <p class="text-sm text-gray-500">Total Birds</p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-2xl font-bold text-orange-600">${flocks.reduce((sum, f) => sum + (f.total_eggs || 0), 0)}</p>
+                                    <p class="text-sm text-gray-500">Total Eggs</p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-2xl font-bold text-purple-600">${flocks.filter(f => f.status === 'ACTIVE').length}</p>
+                                    <p class="text-sm text-gray-500">Active Flocks</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('farmerContent').innerHTML = html;
+        }
+        
+        function displayError(message) {
+            document.getElementById('farmerContent').innerHTML = `
+                <div class="bg-white rounded-lg shadow-lg p-8 text-center">
+                    <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">Error Loading Farmer Details</h3>
+                    <p class="text-gray-600 mb-4">${escapeHtml(message)}</p>
+                    <a href="/organization/ngo/" class="inline-block bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
+                        <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
+                    </a>
+                </div>
+            `;
+        }
+        
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function viewFlock(flockId) {
+            alert(`View flock ${flockId} details - Feature coming soon`);
+        }
+        
+        // Load farmer details on page load
+        loadFarmerDetails();
+    </script>
+</body>
+</html>

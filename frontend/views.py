@@ -66,27 +66,38 @@ def dashboard_view(request):
 
 # ==================== FARMER DASHBOARDS ====================
 
+# frontend/views.py - Update farmer_dashboard_view
+
 @login_required
 def farmer_dashboard_view(request):
-    """Farmer dashboard - poultry farm management"""
+    """Farmer dashboard - poultry farm management with order tracking"""
     if request.user.role not in ['FARMER', 'ADMIN', 'SUPER_ADMIN']:
         return redirect_role_based_dashboard(request.user)
     
+    # Get farms for this user
     farms = []
     flocks = []
     total_birds = 0
     today_eggs = 0
     mortality_rate = 0
     total_sales = 0
+    recent_orders = []
     
     if request.user.tenant:
         from farm.models import Farm, FlockBatch, DailyRecord
+        from marketplace.models import Order
         from django.db.models import Sum
         
+        # Get farms
         farms = Farm.objects.filter(tenant=request.user.tenant)
+        
+        # Get active flocks
         flocks = FlockBatch.objects.filter(tenant=request.user.tenant, status='ACTIVE')
+        
+        # Calculate total birds
         total_birds = sum(flock.current_quantity for flock in flocks)
         
+        # Calculate today's eggs
         today = timezone.now().date()
         for flock in flocks:
             if flock.bird_type in ['LAYERS', 'KUROILER']:
@@ -94,11 +105,13 @@ def farmer_dashboard_view(request):
                 if today_record:
                     today_eggs += today_record.eggs_collected
         
+        # Calculate mortality rate
         if flocks:
             total_initial = sum(flock.initial_quantity for flock in flocks)
             total_mortality = sum(flock.total_mortality for flock in flocks)
             mortality_rate = round((total_mortality / total_initial * 100), 1) if total_initial > 0 else 0
         
+        # Calculate monthly sales
         start_of_month = today.replace(day=1)
         monthly_records = DailyRecord.objects.filter(
             tenant=request.user.tenant,
@@ -106,6 +119,11 @@ def farmer_dashboard_view(request):
             date__lte=today
         )
         total_sales = monthly_records.aggregate(total=Sum('sales_revenue'))['total'] or 0
+        
+        # Get recent orders for this farmer
+        recent_orders = Order.objects.filter(
+            user=request.user
+        ).order_by('-created_at')[:5]
         
     context = {
         'active_nav': 'home',
@@ -118,9 +136,23 @@ def farmer_dashboard_view(request):
         'today_eggs': today_eggs,
         'mortality_rate': mortality_rate,
         'total_sales': total_sales,
+        'recent_orders': recent_orders,
     }
     return render(request, 'dashboard/farmer.html', context)
 
+@login_required
+def farmer_detail_view(request, farmer_id):
+    """Display farmer details"""
+    return render(request, 'dashboard/organizations/farmer_detail.html', {
+        'farmer_id': farmer_id
+    })
+
+@login_required
+def flock_detail_view(request, flock_id):
+    """Display flock details"""
+    return render(request, 'dashboard/organizations/flock_detail.html', {
+        'flock_id': flock_id
+    })
 
 @login_required
 def farm_management_view(request):
@@ -213,6 +245,44 @@ def flock_records_view(request, flock_id):
         'flock_id': flock_id,
     }
     return render(request, 'farm/flock_records.html', context)
+
+# frontend/views.py - Add this function
+
+@login_required
+def farmer_orders_view(request):
+    """Farmer orders page - view all orders"""
+    if request.user.role not in ['FARMER', 'ADMIN', 'SUPER_ADMIN']:
+        return redirect_role_based_dashboard(request.user)
+    
+    context = {
+        'active_nav': 'shop',
+        'user': request.user,
+        'today': timezone.now(),
+    }
+    return render(request, 'farm/orders.html', context)
+
+@login_required
+def order_track_view(request, order_id):
+    """Order tracking page"""
+    from marketplace.models import Order
+    
+    try:
+        order = Order.objects.get(id=order_id)
+        # Check if user has permission to track this order
+        if request.user.role not in ['ADMIN', 'SUPER_ADMIN'] and order.user != request.user:
+            return redirect('frontend:customer_dashboard')
+    except Order.DoesNotExist:
+        return redirect('frontend:customer_dashboard')
+    
+    context = {
+        'active_nav': 'shop',
+        'user': request.user,
+        'order_number': order.order_number,
+        'order_id': order_id,
+    }
+    return render(request, 'shop/track_order.html', context)
+
+
 
 
 @login_required
@@ -645,3 +715,8 @@ def logout_get_view(request):
     if request.user.is_authenticated:
         auth_logout(request)
     return redirect('frontend:login')
+
+@login_required
+def support_view(request):
+    """Support page"""
+    return render(request, 'support.html', {'active_nav': 'support'})

@@ -1,74 +1,1118 @@
-{% extends 'base.html' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NGO Dashboard - KUKUNET</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .nav-item.active {
+            background-color: rgb(240, 253, 244);
+            color: rgb(22, 163, 74);
+        }
+        .section-content {
+            transition: all 0.3s ease;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 10px;
+        }
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .status-PLANNED { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; }
+        .status-ACTIVE { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #065f46; }
+        .status-COMPLETED { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1e40af; }
+        .status-training-upcoming { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1e40af; }
+        .status-training-ongoing { background: linear-gradient(135deg, #fef3c7, #fde68a); color: #92400e; }
+        .status-training-completed { background: linear-gradient(135deg, #d1fae5, #a7f3d0); color: #065f46; }
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.875rem;
+        }
+        .data-table thead th {
+            padding: 0.875rem 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: #1e293b;
+            border-bottom: 2px solid #e2e8f0;
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+        }
+        .data-table tbody tr {
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .data-table tbody tr:hover {
+            background: linear-gradient(90deg, #f0fdf4, #ffffff);
+            transform: scale(1.01);
+        }
+        .data-table tbody td {
+            padding: 0.875rem 1rem;
+            color: #334155;
+        }
+        .action-btn {
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+        }
+        .action-btn-view { background: #eff6ff; color: #3b82f6; }
+        .action-btn-view:hover { background: #3b82f6; color: white; transform: translateY(-2px); }
+        .action-btn-flock { background: #ecfdf5; color: #10b981; }
+        .action-btn-flock:hover { background: #10b981; color: white; transform: translateY(-2px); }
+        .action-btn-training { background: #fef3c7; color: #d97706; }
+        .action-btn-training:hover { background: #d97706; color: white; transform: translateY(-2px); }
+        .action-btn-enroll { background: #e0e7ff; color: #4f46e5; }
+        .action-btn-enroll:hover { background: #4f46e5; color: white; transform: translateY(-2px); }
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.25rem;
+            transition: all 0.3s ease;
+            border: 1px solid #f1f5f9;
+        }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px -12px rgba(0,0,0,0.15); }
+        .search-input {
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 0.5rem 1rem;
+            outline: none;
+        }
+        .search-input:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.1); }
+        .modal { transition: all 0.3s ease; }
+        .modal-content { animation: slideDown 0.3s ease; }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .loading {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #10b981;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+        .checkbox-group {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 8px;
+            background: #f9fafb;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            margin: 2px 0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .checkbox-item:hover { background: #e5e7eb; }
+        .checkbox-item input { margin-right: 10px; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100">
+    <script id="user-data" type="application/json">
+        {
+            "full_name": "{{ request.user.full_name|escapejs }}",
+            "phone_number": "{{ request.user.phone_number|escapejs }}",
+            "role": "{{ request.user.role|escapejs }}",
+            "organization_name": "{{ request.user.organization_name|escapejs }}",
+            "organization_type": "{{ request.user.organization_type|escapejs }}",
+            "tenant_code": "{% if request.user.tenant %}{{ request.user.tenant.tenant_code|escapejs }}{% else %}N/A{% endif %}"
+        }
+    </script>
 
-{% block title %}NGO Dashboard - KUKUNET{% endblock %}
-
-{% block content %}
-<div class="p-4">
-    <!-- Welcome Section -->
-    <div class="bg-gradient-to-r from-purple-700 to-purple-600 text-white rounded-2xl p-5 mb-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold">
-                    <i class="fas fa-heart mr-2"></i>{{ user.organization_name }}
-                </h1>
-                <p class="opacity-90 mt-1">Non-Profit Dashboard</p>
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white shadow-xl flex flex-col fixed h-full z-10">
+            <div class="p-5 border-b bg-gradient-to-r from-green-50 to-white">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-green-600 to-green-700 rounded-xl flex items-center justify-center shadow-lg">
+                        <i class="fas fa-egg text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <span class="text-xl font-bold bg-gradient-to-r from-green-700 to-green-500 bg-clip-text text-transparent">KUKUNET</span>
+                        <p class="text-xs text-gray-500 mt-0.5" id="orgTypeDisplay">NGO Platform</p>
+                    </div>
+                </div>
+                <div class="mt-3 pt-2 border-t border-gray-100">
+                    <p class="text-xs text-gray-500 flex items-center"><i class="fas fa-building mr-1 text-green-600"></i><span id="orgName">Organization Name</span></p>
+                    <p class="text-xs text-gray-500 flex items-center mt-1"><i class="fas fa-code-branch mr-1 text-green-600"></i><span id="tenantCode">Loading...</span></p>
+                </div>
             </div>
-            <div class="bg-white/20 rounded-full p-3">
-                <i class="fas fa-hand-holding-heart text-3xl"></i>
+            
+            <nav class="flex-1 mt-4 overflow-y-auto px-3">
+                <a href="#" onclick="showSection('dashboard'); return false;" class="nav-item active flex items-center px-3 py-2.5 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-600 transition-all mb-1" data-section="dashboard">
+                    <i class="fas fa-tachometer-alt w-5 mr-3"></i><span class="flex-1">Dashboard</span>
+                </a>
+                <a href="#" onclick="showSection('farmers'); return false;" class="nav-item flex items-center px-3 py-2.5 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-600 transition-all mb-1" data-section="farmers">
+                    <i class="fas fa-users w-5 mr-3"></i><span class="flex-1">Farmers</span>
+                    <span class="text-xs bg-gray-200 rounded-full px-2 py-0.5" id="farmersCount">0</span>
+                </a>
+                <a href="#" onclick="showSection('flocks'); return false;" class="nav-item flex items-center px-3 py-2.5 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-600 transition-all mb-1" data-section="flocks">
+                    <i class="fas fa-dove w-5 mr-3"></i><span class="flex-1">Flocks</span>
+                    <span class="text-xs bg-gray-200 rounded-full px-2 py-0.5" id="flocksCount">0</span>
+                </a>
+                <a href="#" onclick="showSection('trainings'); return false;" class="nav-item flex items-center px-3 py-2.5 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-600 transition-all mb-1" data-section="trainings">
+                    <i class="fas fa-chalkboard-user w-5 mr-3"></i><span class="flex-1">Trainings</span>
+                    <span class="text-xs bg-blue-100 text-blue-800 rounded-full px-2 py-0.5" id="trainingsCount">0</span>
+                </a>
+                <a href="#" onclick="showSection('expenses'); return false;" class="nav-item flex items-center px-3 py-2.5 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-600 transition-all mb-1" data-section="expenses">
+                    <i class="fas fa-receipt w-5 mr-3"></i><span class="flex-1">Expenses</span>
+                </a>
+                <a href="#" onclick="showSection('incomes'); return false;" class="nav-item flex items-center px-3 py-2.5 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-600 transition-all mb-1" data-section="incomes">
+                    <i class="fas fa-chart-line w-5 mr-3"></i><span class="flex-1">Incomes</span>
+                </a>
+                <a href="#" onclick="showSection('purchases'); return false;" class="nav-item flex items-center px-3 py-2.5 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-600 transition-all mb-1" data-section="purchases">
+                    <i class="fas fa-shopping-cart w-5 mr-3"></i><span class="flex-1">Feed Purchases</span>
+                </a>
+                <a href="#" onclick="showSection('orders'); return false;" class="nav-item flex items-center px-3 py-2.5 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-600 transition-all mb-1" data-section="orders">
+                    <i class="fas fa-truck w-5 mr-3"></i><span class="flex-1">Orders</span>
+                    <span class="text-xs bg-yellow-100 text-yellow-800 rounded-full px-2 py-0.5" id="pendingOrdersCount">0</span>
+                </a>
+                <a href="#" onclick="showSection('reports'); return false;" class="nav-item flex items-center px-3 py-2.5 rounded-lg text-gray-700 hover:bg-green-50 hover:text-green-600 transition-all mb-1" data-section="reports">
+                    <i class="fas fa-file-alt w-5 mr-3"></i><span class="flex-1">Reports</span>
+                </a>
+            </nav>
+            
+            <div class="p-4 border-t bg-gradient-to-r from-gray-50 to-white">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-green-100 to-green-200 rounded-full flex items-center justify-center shadow-md">
+                        <i class="fas fa-user text-green-600 text-sm"></i>
+                    </div>
+                    <div class="flex-1">
+                        <p class="text-sm font-semibold text-gray-700" id="userName">User Name</p>
+                        <p class="text-xs text-gray-500"><i class="fas fa-id-badge mr-1 text-green-500"></i><span id="userRole">Organization</span></p>
+                        <p class="text-xs text-gray-500 mt-0.5"><i class="fas fa-phone mr-1 text-green-500"></i><span id="userPhone">Loading...</span></p>
+                    </div>
+                    <button onclick="logout()" class="text-gray-400 hover:text-red-500 transition-all"><i class="fas fa-sign-out-alt"></i></button>
+                </div>
+                <div class="mt-3 pt-2 border-t border-gray-200 text-center">
+                    <p class="text-xs text-gray-400"><i class="fas fa-copyright mr-1"></i> 2024 KUKUNET</p>
+                    <p class="text-xs text-gray-400 mt-0.5"><i class="fas fa-chicken mr-1"></i> Empowering Poultry Farmers</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 ml-64 overflow-y-auto">
+            <!-- Dashboard Section -->
+            <div id="dashboard-section" class="section-content p-6">
+                <div class="mb-6">
+                    <h1 class="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Dashboard Overview</h1>
+                    <p class="text-gray-500 mt-1" id="welcomeMessage">Welcome back!</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-5 mb-6">
+                    <div class="stat-card"><div class="flex justify-between"><div><p class="text-gray-500 text-sm">Total Farmers</p><p class="text-3xl font-bold" id="statTotalFarmers">0</p></div><div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center"><i class="fas fa-users text-2xl text-green-600"></i></div></div></div>
+                    <div class="stat-card"><div class="flex justify-between"><div><p class="text-gray-500 text-sm">Active Flocks</p><p class="text-3xl font-bold" id="statActiveFlocks">0</p></div><div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center"><i class="fas fa-dove text-2xl text-blue-600"></i></div></div></div>
+                    <div class="stat-card"><div class="flex justify-between"><div><p class="text-gray-500 text-sm">Trainings</p><p class="text-3xl font-bold" id="statTotalTrainings">0</p></div><div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center"><i class="fas fa-chalkboard-user text-2xl text-purple-600"></i></div></div></div>
+                    <div class="stat-card"><div class="flex justify-between"><div><p class="text-gray-500 text-sm">Total Revenue</p><p class="text-3xl font-bold text-green-600" id="statTotalRevenue">UGX 0</p></div><div class="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fas fa-money-bill-wave text-2xl text-emerald-600"></i></div></div></div>
+                    <div class="stat-card"><div class="flex justify-between"><div><p class="text-gray-500 text-sm">Net Profit</p><p class="text-3xl font-bold text-purple-600" id="statNetProfit">UGX 0</p></div><div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center"><i class="fas fa-chart-line text-2xl text-purple-600"></i></div></div></div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white rounded-xl shadow-sm p-5 border"><h3 class="font-semibold text-gray-700 mb-3">Revenue vs Expenses</h3><canvas id="revenueExpenseChart" height="250"></canvas></div>
+                    <div class="bg-white rounded-xl shadow-sm p-5 border"><h3 class="font-semibold text-gray-700 mb-3">Flock Status Distribution</h3><canvas id="flockStatusChart" height="250"></canvas></div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border overflow-hidden"><div class="px-6 py-4 border-b"><h3 class="font-semibold text-gray-700">Recent Daily Records</h3></div><div class="overflow-x-auto"><table class="data-table"><thead><tr><th>Date</th><th>Farmer</th><th>Flock</th><th class="text-right">Revenue</th><th class="text-right">Expenses</th><th class="text-right">Profit</th></tr></thead><tbody id="recentRecordsTable"><tr><td colspan="6" class="text-center py-8">Loading...<\/td></tr></tbody></table></div></div>
+            </div>
+
+            <!-- Farmers Section -->
+            <div id="farmers-section" class="section-content hidden p-6">
+                <div class="flex justify-between items-center mb-6"><div><h1 class="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Farmers Management</h1><p class="text-gray-500 text-sm">Manage and monitor all registered farmers</p></div><div class="flex space-x-3"><div class="relative"><i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i><input type="text" id="searchFarmersInput" placeholder="Search farmers..." class="search-input pl-10 pr-4 py-2 w-72"></div><button onclick="exportFarmers()" class="bg-gradient-to-r from-green-600 to-green-700 text-white px-5 py-2 rounded-xl flex items-center gap-2"><i class="fas fa-download"></i> Export</button></div></div>
+                <div class="bg-white rounded-xl shadow-sm border overflow-hidden"><div class="overflow-x-auto"><table class="data-table"><thead><tr><th>Name</th><th>Phone</th><th class="text-center">Flocks</th><th class="text-center">Birds</th><th class="text-right">Spent</th><th class="text-right">Earned</th><th class="text-center">Actions</th></tr></thead><tbody id="farmersTableBody"><tr><td colspan="7" class="text-center py-8">Loading farmers...<\/td></tr></tbody></table></div></div>
+            </div>
+
+            <!-- Flocks Section -->
+            <div id="flocks-section" class="section-content hidden p-6">
+                <div class="flex justify-between items-center mb-6"><div><h1 class="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Flock Management</h1><p class="text-gray-500 text-sm">Track and manage all poultry flocks</p></div><div class="flex space-x-3"><div class="relative"><i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i><input type="text" id="searchFlocksInput" placeholder="Search flocks..." class="search-input pl-10 pr-4 py-2 w-64"></div><select id="flockStatusFilter" class="search-input px-4 py-2"><option value="all">All Status</option><option value="PLANNED">Planned</option><option value="ACTIVE">Active</option><option value="COMPLETED">Completed</option><option value="SICK">Sick</option></select></div></div>
+                <div class="bg-white rounded-xl shadow-sm border overflow-hidden"><div class="overflow-x-auto"><table class="data-table"><thead><tr><th>Batch Name</th><th>Farmer</th><th>Bird Type</th><th class="text-center">Status</th><th class="text-center">Initial</th><th class="text-center">Current</th><th class="text-center">Age</th><th class="text-center">Mortality</th><th class="text-center">Actions</th></tr></thead><tbody id="flocksTableBody"><tr><td colspan="9" class="text-center py-8">Loading flocks...<\/td></tr></tbody></table></div></div>
+            </div>
+
+            <!-- Trainings Section -->
+            <div id="trainings-section" class="section-content hidden p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <div><h1 class="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">Farmer Trainings</h1><p class="text-gray-500 text-sm">Schedule and track farmer training programs</p></div>
+                    <div class="flex space-x-3"><div class="relative"><i class="fas fa-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm"></i><input type="text" id="searchTrainingsInput" placeholder="Search trainings..." class="search-input pl-10 pr-4 py-2 w-64"></div><button onclick="openAddTrainingModal()" class="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-5 py-2 rounded-xl flex items-center gap-2"><i class="fas fa-plus"></i> Schedule Training</button></div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200"><p class="text-sm text-blue-600 font-medium">Upcoming Trainings</p><p class="text-2xl font-bold text-blue-700 mt-1" id="upcomingTrainings">0</p></div>
+                    <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl p-4 border border-yellow-200"><p class="text-sm text-yellow-600 font-medium">Ongoing Trainings</p><p class="text-2xl font-bold text-yellow-700 mt-1" id="ongoingTrainings">0</p></div>
+                    <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200"><p class="text-sm text-green-600 font-medium">Completed Trainings</p><p class="text-2xl font-bold text-green-700 mt-1" id="completedTrainings">0</p></div>
+                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200"><p class="text-sm text-purple-600 font-medium">Total Farmers Trained</p><p class="text-2xl font-bold text-purple-700 mt-1" id="totalFarmersTrained">0</p></div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border overflow-hidden"><div class="overflow-x-auto"><table class="data-table"><thead><tr><th>Title</th><th>Date</th><th>Trainer</th><th class="text-center">Participants</th><th class="text-center">Duration</th><th class="text-center">Status</th><th class="text-center">Actions</th></tr></thead><tbody id="trainingsTableBody"><tr><td colspan="7" class="text-center py-8">Loading trainings...<\/td></tr></tbody></table></div></div>
+            </div>
+
+            <!-- Other Sections (Expenses, Incomes, Purchases, Orders, Reports) -->
+            <div id="expenses-section" class="section-content hidden p-6"><div class="flex justify-between items-center mb-6"><div><h1 class="text-2xl font-bold">Expenses Tracking</h1><p class="text-gray-500 text-sm">Monitor all farm expenses</p></div><div class="flex space-x-3"><input type="month" id="expenseMonthFilter" class="search-input px-4 py-2"><button onclick="addExpense()" class="bg-red-600 text-white px-5 py-2 rounded-xl">Add Expense</button></div></div><div class="grid grid-cols-4 gap-4 mb-6"><div class="bg-red-50 rounded-xl p-4"><p class="text-sm text-red-600">Total Expenses</p><p class="text-2xl font-bold text-red-700" id="expenseTotal">UGX 0</p></div><div class="bg-orange-50 rounded-xl p-4"><p class="text-sm text-orange-600">Feed Cost</p><p class="text-2xl font-bold text-orange-700" id="expenseFeedTotal">UGX 0</p></div><div class="bg-blue-50 rounded-xl p-4"><p class="text-sm text-blue-600">Medication Cost</p><p class="text-2xl font-bold text-blue-700" id="expenseMedTotal">UGX 0</p></div><div class="bg-purple-50 rounded-xl p-4"><p class="text-sm text-purple-600">Labour Cost</p><p class="text-2xl font-bold text-purple-700" id="expenseLabourTotal">UGX 0</p></div></div><div class="bg-white rounded-xl shadow-sm border overflow-hidden"><table class="data-table"><thead><tr><th>Date</th><th>Farmer</th><th>Flock</th><th class="text-right">Feed</th><th class="text-right">Medication</th><th class="text-right">Labour</th><th class="text-right">Other</th><th class="text-right">Total</th></tr></thead><tbody id="expensesTableBody"><tr><td colspan="8" class="text-center py-8">Loading expenses...<\/td></tr></tbody></table></div></div>
+
+            <div id="incomes-section" class="section-content hidden p-6"><div class="flex justify-between items-center mb-6"><div><h1 class="text-2xl font-bold">Income Tracking</h1><p class="text-gray-500 text-sm">Monitor all farm income</p></div><div class="flex space-x-3"><input type="month" id="incomeMonthFilter" class="search-input px-4 py-2"><button onclick="addIncome()" class="bg-green-600 text-white px-5 py-2 rounded-xl">Add Income</button></div></div><div class="grid grid-cols-3 gap-4 mb-6"><div class="bg-green-50 rounded-xl p-4"><p class="text-sm text-green-600">Total Revenue</p><p class="text-2xl font-bold text-green-700" id="incomeTotal">UGX 0</p></div><div class="bg-blue-50 rounded-xl p-4"><p class="text-sm text-blue-600">Bird Sales</p><p class="text-2xl font-bold text-blue-700" id="incomeBirdTotal">UGX 0</p></div><div class="bg-yellow-50 rounded-xl p-4"><p class="text-sm text-yellow-600">Egg Sales</p><p class="text-2xl font-bold text-yellow-700" id="incomeEggTotal">UGX 0</p></div></div><div class="bg-white rounded-xl shadow-sm border overflow-hidden"><table class="data-table"><thead><tr><th>Date</th><th>Farmer</th><th>Flock</th><th class="text-right">Birds Sold</th><th class="text-right">Eggs Sold</th><th class="text-right">Revenue</th><th class="text-right">Profit</th></tr></thead><tbody id="incomesTableBody"><td><td colspan="7" class="text-center py-8">Loading incomes...<\/td></td></tbody></tr></div></div>
+
+            <div id="purchases-section" class="section-content hidden p-6"><div class="flex justify-between items-center mb-6"><div><h1 class="text-2xl font-bold">Feed Purchases</h1><p class="text-gray-500 text-sm">Track feed inventory purchases</p></div><button onclick="addPurchase()" class="bg-green-600 text-white px-5 py-2 rounded-xl">Record Purchase</button></div><div class="bg-white rounded-xl shadow-sm border overflow-hidden"><table class="data-table"><thead><tr><th>Date</th><th>Feed Type</th><th class="text-right">Quantity</th><th class="text-right">Cost/KG</th><th class="text-right">Total</th><th>Supplier</th><th>Invoice</th></tr></thead><tbody id="purchasesTableBody"><tr><td colspan="7" class="text-center py-8">Loading purchases...<\/td></td></tbody></table></div></div>
+
+            <div id="orders-section" class="section-content hidden p-6"><div class="flex justify-between items-center mb-6"><div><h1 class="text-2xl font-bold">Customer Orders</h1><p class="text-gray-500 text-sm">Manage customer orders</p></div><select id="orderStatusFilter" class="search-input px-4 py-2"><option value="all">All Orders</option><option value="PENDING">Pending</option><option value="CONFIRMED">Confirmed</option><option value="PROCESSING">Processing</option><option value="SHIPPED">Shipped</option><option value="DELIVERED">Delivered</option></select></div><div class="bg-white rounded-xl shadow-sm border overflow-hidden"><table class="data-table"><thead><tr><th>Order #</th><th>Date</th><th>Customer</th><th class="text-center">Items</th><th class="text-right">Total</th><th class="text-center">Status</th><th class="text-center">Payment</th><th class="text-center">Actions</th></tr></thead><tbody id="ordersTableBody"><tr><td colspan="8" class="text-center py-8">Loading orders...<\/td></tr></tbody></table></div></div>
+
+            <div id="reports-section" class="section-content hidden p-6"><div class="mb-6"><h1 class="text-2xl font-bold">Generate Reports</h1><p class="text-gray-500 text-sm">Create and download reports</p></div><div class="grid grid-cols-3 gap-6"><div class="bg-white rounded-xl p-6"><i class="fas fa-chart-line text-3xl text-green-600 mb-3"></i><h3 class="text-lg font-semibold">Financial Report</h3><p class="text-gray-500 text-sm mb-4">Revenue, expenses, profit analysis</p><button onclick="generateFinancialReport()" class="bg-green-600 text-white px-4 py-2 rounded-lg">Generate</button></div><div class="bg-white rounded-xl p-6"><i class="fas fa-dove text-3xl text-blue-600 mb-3"></i><h3 class="text-lg font-semibold">Flock Report</h3><p class="text-gray-500 text-sm mb-4">Mortality, growth, production</p><button onclick="generateFlockReport()" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Generate</button></div><div class="bg-white rounded-xl p-6"><i class="fas fa-users text-3xl text-purple-600 mb-3"></i><h3 class="text-lg font-semibold">Farmer Report</h3><p class="text-gray-500 text-sm mb-4">Individual farmer performance</p><button onclick="generateFarmerReport()" class="bg-purple-600 text-white px-4 py-2 rounded-lg">Generate</button></div></div></div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="farmerModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50"><div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-screen overflow-y-auto m-4 modal-content"><div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between"><h2 class="text-xl font-bold" id="farmerModalTitle">Farmer Details</h2><button onclick="closeFarmerModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button></div><div id="farmerModalContent" class="p-6"><div class="text-center py-8"><div class="loading mx-auto mb-4"></div><p>Loading farmer details...</p></div></div><div class="sticky bottom-0 bg-gray-50 border-t px-6 py-3 flex justify-end"><button onclick="closeFarmerModal()" class="bg-gray-500 text-white px-5 py-2 rounded-xl">Close</button></div></div></div>
+
+    <div id="flockModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50"><div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-screen overflow-y-auto m-4 modal-content"><div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between"><h2 class="text-xl font-bold" id="flockModalTitle">Flock Details</h2><button onclick="closeFlockModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button></div><div id="flockModalContent" class="p-6"><div class="text-center py-8"><div class="loading mx-auto mb-4"></div><p>Loading flock details...</p></div></div><div class="sticky bottom-0 bg-gray-50 border-t px-6 py-3 flex justify-end"><button onclick="closeFlockModal()" class="bg-gray-500 text-white px-5 py-2 rounded-xl">Close</button></div></div></div>
+
+    <!-- Add Training Modal -->
+    <div id="addTrainingModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-screen overflow-y-auto m-4 modal-content">
+            <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between">
+                <h2 class="text-xl font-bold">Schedule New Training</h2>
+                <button onclick="closeAddTrainingModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-6">
+                <form id="addTrainingForm">
+                    <div class="mb-4"><label class="block text-sm font-medium mb-1">Training Title *</label><input type="text" id="trainingTitle" required class="w-full border rounded-lg px-3 py-2"></div>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div><label class="block text-sm font-medium mb-1">Start Date *</label><input type="date" id="trainingStartDate" required class="w-full border rounded-lg px-3 py-2"></div>
+                        <div><label class="block text-sm font-medium mb-1">End Date *</label><input type="date" id="trainingEndDate" required class="w-full border rounded-lg px-3 py-2"></div>
+                    </div>
+                    <div class="mb-4"><label class="block text-sm font-medium mb-1">Venue/Location *</label><input type="text" id="trainingVenue" required class="w-full border rounded-lg px-3 py-2"></div>
+                    <div class="mb-4"><label class="block text-sm font-medium mb-1">Trainer Name *</label><input type="text" id="trainingTrainer" required class="w-full border rounded-lg px-3 py-2"></div>
+                    <div class="mb-4"><label class="block text-sm font-medium mb-1">Training Type</label><select id="trainingType" class="w-full border rounded-lg px-3 py-2"><option value="POULTRY_HEALTH">Poultry Health Management</option><option value="FEED_FORMULATION">Feed Formulation</option><option value="RECORD_KEEPING">Record Keeping</option><option value="BREEDING">Breeding Techniques</option><option value="MARKETING">Marketing & Sales</option><option value="BIO_SECURITY">Bio-security</option><option value="OTHER">Other</option></select></div>
+                    <div class="mb-4"><label class="block text-sm font-medium mb-1">Expected Participants</label><input type="number" id="trainingExpectedParticipants" value="0" class="w-full border rounded-lg px-3 py-2"></div>
+                    <div class="mb-4"><label class="block text-sm font-medium mb-1">Topics Covered</label><textarea id="trainingTopics" rows="3" class="w-full border rounded-lg px-3 py-2" placeholder="List topics to be covered..."></textarea></div>
+                    <div class="flex gap-3 mt-6"><button type="button" onclick="closeAddTrainingModal()" class="flex-1 bg-gray-300 py-2 rounded-lg">Cancel</button><button type="submit" class="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700">Schedule Training</button></div>
+                </form>
             </div>
         </div>
     </div>
 
-    <!-- Impact Stats -->
-    <div class="grid grid-cols-2 gap-4 mb-6">
-        <div class="card text-center">
-            <i class="fas fa-chalkboard-user text-3xl text-purple-600"></i>
-            <p class="text-2xl font-bold mt-2" id="trainings">0</p>
-            <p class="text-gray-500 text-sm">Trainings Held</p>
-        </div>
-        <div class="card text-center">
-            <i class="fas fa-users text-3xl text-purple-600"></i>
-            <p class="text-2xl font-bold mt-2" id="farmersTrained">0</p>
-            <p class="text-gray-500 text-sm">Farmers Trained</p>
-        </div>
-        <div class="card text-center">
-            <i class="fas fa-hand-holding-usd text-3xl text-purple-600"></i>
-            <p class="text-2xl font-bold mt-2">UGX <span id="funding">0</span></p>
-            <p class="text-gray-500 text-sm">Funding Received</p>
-        </div>
-        <div class="card text-center">
-            <i class="fas fa-chart-line text-3xl text-purple-600"></i>
-            <p class="text-2xl font-bold mt-2" id="impactScore">0</p>
-            <p class="text-gray-500 text-sm">Impact Score</p>
+    <!-- Training Detail Modal -->
+    <div id="trainingDetailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-screen overflow-y-auto m-4 modal-content">
+            <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between">
+                <h2 class="text-xl font-bold" id="trainingDetailModalTitle">Training Details</h2>
+                <button onclick="closeTrainingDetailModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div id="trainingDetailContent" class="p-6">
+                <div class="text-center py-8"><div class="loading"></div><p>Loading training details...</p></div>
+            </div>
+            <div class="sticky bottom-0 bg-gray-50 border-t px-6 py-3 flex justify-end">
+                <button onclick="closeTrainingDetailModal()" class="bg-gray-500 text-white px-5 py-2 rounded-xl">Close</button>
+            </div>
         </div>
     </div>
 
-    <!-- NGO Actions -->
-    <div class="grid grid-cols-3 gap-3 mb-6">
-        <button onclick="openTraining()" class="bg-white p-3 rounded-xl text-center shadow-sm">
-            <i class="fas fa-chalkboard text-purple-600 text-xl"></i>
-            <p class="text-xs mt-1">Schedule Training</p>
-        </button>
-        <button onclick="openOutreach()" class="bg-white p-3 rounded-xl text-center shadow-sm">
-            <i class="fas fa-bullhorn text-purple-600 text-xl"></i>
-            <p class="text-xs mt-1">Outreach Program</p>
-        </button>
-        <button onclick="openReport()" class="bg-white p-3 rounded-xl text-center shadow-sm">
-            <i class="fas fa-file-alt text-purple-600 text-xl"></i>
-            <p class="text-xs mt-1">Impact Report</p>
-        </button>
+    <!-- Edit Training Modal -->
+    <div id="editTrainingModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-screen overflow-y-auto m-4 modal-content">
+            <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between">
+                <h2 class="text-xl font-bold">Edit Training</h2>
+                <button onclick="closeEditTrainingModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div id="editTrainingContent" class="p-6">
+                <div class="text-center py-8"><div class="loading"></div><p>Loading training data...</p></div>
+            </div>
+        </div>
     </div>
 
-    <!-- Upcoming Trainings -->
-    <div class="mb-6">
-        <h2 class="text-lg font-bold mb-3">Upcoming Trainings</h2>
-        <div id="trainingsList" class="space-y-2"></div>
+    <!-- Enroll Farmers Modal -->
+    <div id="enrollFarmersModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-screen overflow-y-auto m-4 modal-content">
+            <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between">
+                <h2 class="text-xl font-bold" id="enrollModalTitle">Enroll Farmers in Training</h2>
+                <button onclick="closeEnrollFarmersModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div id="enrollFarmersContent" class="p-6">
+                <div class="text-center py-8"><div class="loading"></div><p>Loading farmers...</p></div>
+            </div>
+        </div>
     </div>
 
-    <!-- Success Stories -->
-    <div>
-        <h2 class="text-lg font-bold mb-3">Success Stories</h2>
-        <div id="storiesList" class="space-y-2"></div>
-    </div>
-</div>
-{% endblock %}
+    <script>
+        let revenueExpenseChart, flockStatusChart;
+        let currentData = { farmers: [], flocks: [], dailyRecords: [], purchases: [], orders: [], trainings: [] };
+        let currentTrainingId = null;
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+
+        function showSection(sectionId) {
+            document.querySelectorAll('.section-content').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`${sectionId}-section`).classList.remove('hidden');
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('bg-green-50', 'text-green-600');
+                item.classList.add('text-gray-700');
+            });
+            event.currentTarget.classList.add('bg-green-50', 'text-green-600');
+        }
+
+        async function loadDashboardData() {
+            try {
+                await Promise.all([loadStats(), loadFarmers(), loadFlocks(), loadDailyRecords(), loadFeedPurchases(), loadOrders(), loadTrainings()]);
+            } catch (error) { console.error('Error loading data:', error); showToast('Failed to load data', 'error'); }
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/v1/organization/stats/');
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('statTotalFarmers').textContent = data.stats.total_farmers;
+                    document.getElementById('statActiveFlocks').textContent = data.stats.active_flocks;
+                    document.getElementById('statTotalRevenue').textContent = `UGX ${data.stats.total_revenue.toLocaleString()}`;
+                    document.getElementById('statNetProfit').textContent = `UGX ${data.stats.net_profit.toLocaleString()}`;
+                    document.getElementById('farmersCount').textContent = data.stats.total_farmers;
+                    document.getElementById('flocksCount').textContent = data.stats.total_flocks;
+                }
+            } catch (error) { console.error('Error loading stats:', error); }
+        }
+
+        async function loadFarmers() {
+            try {
+                const res = await fetch('/api/v1/organization/farmers/');
+                const data = await res.json();
+                if (data.success) { currentData.farmers = data.farmers; renderFarmersTable(data.farmers); }
+            } catch (error) { console.error('Error loading farmers:', error); }
+        }
+
+        async function loadFlocks() {
+            try {
+                const res = await fetch('/api/v1/organization/flocks/');
+                const data = await res.json();
+                if (data.success) { currentData.flocks = data.flocks; renderFlocksTable(data.flocks); updateFlockChart(data.flocks); }
+            } catch (error) { console.error('Error loading flocks:', error); }
+        }
+
+        async function loadDailyRecords() {
+            try {
+                const res = await fetch('/api/v1/organization/daily-records/');
+                const data = await res.json();
+                if (data.success) {
+                    currentData.dailyRecords = data.records;
+                    renderExpensesTable(data.records);
+                    renderIncomesTable(data.records);
+                    renderRecentRecords(data.records.slice(0, 10));
+                    updateRevenueExpenseChart(data.records);
+                    updateExpenseTotals(data.records);
+                    updateIncomeTotals(data.records);
+                }
+            } catch (error) { console.error('Error loading daily records:', error); }
+        }
+
+        async function loadFeedPurchases() {
+            try {
+                const res = await fetch('/api/v1/organization/feed-purchases/');
+                const data = await res.json();
+                if (data.success) { currentData.purchases = data.purchases; renderPurchasesTable(data.purchases); }
+            } catch (error) { console.error('Error loading purchases:', error); }
+        }
+
+        async function loadOrders() {
+            try {
+                const res = await fetch('/api/v1/organization/orders/');
+                const data = await res.json();
+                if (data.success) {
+                    currentData.orders = data.orders;
+                    renderOrdersTable(data.orders);
+                    document.getElementById('pendingOrdersCount').textContent = data.orders.filter(o => o.status === 'PENDING').length;
+                }
+            } catch (error) { console.error('Error loading orders:', error); }
+        }
+
+        async function loadTrainings() {
+            try {
+                const res = await fetch('/api/v1/organization/trainings/');
+                const data = await res.json();
+                if (data.success) {
+                    currentData.trainings = data.trainings;
+                    renderTrainingsTable(data.trainings);
+                    updateTrainingStats(data.trainings);
+                    document.getElementById('trainingsCount').textContent = data.trainings.length;
+                    document.getElementById('statTotalTrainings').textContent = data.trainings.length;
+                }
+            } catch (error) {
+                console.error('Error loading trainings:', error);
+                const demo = [{ id: 1, title: "Poultry Health Management", start_date: "2024-12-15", end_date: "2024-12-16", trainer_name: "Dr. Sarah", venue: "Kampala", expected_participants: 25, status: "UPCOMING" }];
+                currentData.trainings = demo;
+                renderTrainingsTable(demo);
+                updateTrainingStats(demo);
+            }
+        }
+
+        function updateTrainingStats(trainings) {
+            const upcoming = trainings.filter(t => t.status === 'UPCOMING').length;
+            const ongoing = trainings.filter(t => t.status === 'ONGOING').length;
+            const completed = trainings.filter(t => t.status === 'COMPLETED').length;
+            const totalParticipants = trainings.reduce((s, t) => s + (t.actual_participants || t.expected_participants || 0), 0);
+            
+            document.getElementById('upcomingTrainings').textContent = upcoming;
+            document.getElementById('ongoingTrainings').textContent = ongoing;
+            document.getElementById('completedTrainings').textContent = completed;
+            document.getElementById('totalFarmersTrained').textContent = totalParticipants;
+        }
+
+        function renderFarmersTable(farmers) {
+            const tbody = document.getElementById('farmersTableBody');
+            if (!farmers.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8">No farmers found<\/td></td>'; return; }
+            let html = '';
+            farmers.forEach(f => {
+                html += `<tr class="border-b"><td class="px-4 py-3">${escapeHtml(f.full_name)}<\/td><td class="px-4 py-3">${f.phone_number}<\/td><td class="px-4 py-3 text-center">${f.total_flocks||0}<\/td><td class="px-4 py-3 text-center">${f.total_birds||0}<\/td><td class="px-4 py-3 text-right">UGX ${(f.total_spent||0).toLocaleString()}<\/td><td class="px-4 py-3 text-right">UGX ${(f.total_earned||0).toLocaleString()}<\/td><td class="px-4 py-3 text-center"><button onclick="viewFarmer(${f.id})" class="action-btn action-btn-view mr-1"><i class="fas fa-eye"></i></button><button onclick="viewFarmerFlocks(${f.id})" class="action-btn action-btn-flock mr-1"><i class="fas fa-dove"></i></button><button onclick="openEnrollFarmerInTraining(${f.id})" class="action-btn action-btn-enroll"><i class="fas fa-graduation-cap"></i></button><\/td><\/tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function renderFlocksTable(flocks) {
+            const tbody = document.getElementById('flocksTableBody');
+            if (!flocks.length) { tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8">No flocks found<\/td></td>'; return; }
+            let html = '';
+            flocks.forEach(f => {
+                html += `<tr class="border-b"><td class="px-4 py-3">${escapeHtml(f.batch_name)}<\/td><td class="px-4 py-3">${escapeHtml(f.farmer_name)}<\/td><td class="px-4 py-3">${f.bird_type}<\/td><td class="px-4 py-3 text-center"><span class="status-badge status-${f.status}">${f.status_display}<\/span><\/td><td class="px-4 py-3 text-center">${f.initial_quantity}<\/td><td class="px-4 py-3 text-center">${f.current_quantity}<\/td><td class="px-4 py-3 text-center">${f.age_weeks} wks<\/td><td class="px-4 py-3 text-center">${f.mortality_rate}%<\/td><td class="px-4 py-3 text-center"><button onclick="viewFlockDetails(${f.id})" class="action-btn action-btn-view"><i class="fas fa-chart-line"></i></button><\/td><\/tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function renderTrainingsTable(trainings) {
+            const tbody = document.getElementById('trainingsTableBody');
+            if (!trainings.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8">No trainings scheduled<\/td></td>'; return; }
+            let html = '';
+            trainings.forEach(t => {
+                let statusClass = t.status === 'UPCOMING' ? 'status-training-upcoming' : (t.status === 'ONGOING' ? 'status-training-ongoing' : 'status-training-completed');
+                let duration = Math.ceil((new Date(t.end_date) - new Date(t.start_date)) / (1000*60*60*24)) + 1;
+                html += `<tr class="border-b"><td class="px-4 py-3 font-medium">${escapeHtml(t.title)}<\/td><td class="px-4 py-3">${t.start_date} to ${t.end_date}<\/td><td class="px-4 py-3">${escapeHtml(t.trainer_name)}<\/td><td class="px-4 py-3 text-center">${t.expected_participants || 0}<\/td><td class="px-4 py-3 text-center">${duration} days<\/td><td class="px-4 py-3 text-center">
+                        <select onchange="updateTrainingStatus(${t.id}, this.value)" class="text-xs border rounded px-2 py-1 bg-white">
+                            <option value="UPCOMING" ${t.status === 'UPCOMING' ? 'selected' : ''}>Upcoming</option>
+                            <option value="ONGOING" ${t.status === 'ONGOING' ? 'selected' : ''}>Ongoing</option>
+                            <option value="COMPLETED" ${t.status === 'COMPLETED' ? 'selected' : ''}>Completed</option>
+                            <option value="CANCELLED" ${t.status === 'CANCELLED' ? 'selected' : ''}>Cancelled</option>
+                        </select>
+                    <\/td><td class="px-4 py-3 text-center">
+                        <button onclick="viewTrainingDetails(${t.id})" class="action-btn action-btn-view mr-1" title="View Details"><i class="fas fa-eye"></i></button>
+                        <button onclick="openEnrollFarmersModal(${t.id}, '${escapeHtml(t.title)}')" class="action-btn action-btn-enroll mr-1" title="Enroll Farmers"><i class="fas fa-user-plus"></i></button>
+                        <button onclick="editTraining(${t.id})" class="action-btn action-btn-training" title="Edit Training"><i class="fas fa-edit"></i></button>
+                    <\/td><\/tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        // Update training status - FIXED
+        async function updateTrainingStatus(trainingId, status) {
+            try {
+                const res = await fetch(`/api/v1/organization/trainings/${trainingId}/`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                    body: JSON.stringify({ status: status })
+                });
+                const result = await res.json();
+                if (result.success) {
+                    showToast(`Training status updated to ${status}`, 'success');
+                    // Refresh the trainings data
+                    await loadTrainings();
+                    // Also update stats
+                    await loadStats();
+                } else {
+                    showToast(result.message || 'Failed to update status', 'error');
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+                showToast('Network error', 'error');
+            }
+        }
+
+        // Enroll Farmers Functions
+        async function openEnrollFarmersModal(trainingId, trainingTitle) {
+            currentTrainingId = trainingId;
+            document.getElementById('enrollModalTitle').textContent = `Enroll Farmers in: ${trainingTitle}`;
+            openModal('enrollFarmersModal');
+            document.getElementById('enrollFarmersContent').innerHTML = '<div class="text-center py-8"><div class="loading"></div><p>Loading farmers...</p></div>';
+            
+            try {
+                const trainingRes = await fetch(`/api/v1/organization/trainings/${trainingId}/`);
+                const trainingData = await trainingRes.json();
+                const enrolledIds = trainingData.enrolled_farmers?.map(f => f.id) || [];
+                
+                let farmersHtml = '<div class="checkbox-group">';
+                if (currentData.farmers && currentData.farmers.length > 0) {
+                    currentData.farmers.forEach(farmer => {
+                        const isChecked = enrolledIds.includes(farmer.id);
+                        farmersHtml += `
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="enroll_farmer" value="${farmer.id}" ${isChecked ? 'checked' : ''}>
+                                <div>
+                                    <span class="font-medium">${escapeHtml(farmer.full_name)}</span>
+                                    <span class="text-xs text-gray-500 ml-2">${farmer.phone_number}</span>
+                                </div>
+                            </label>
+                        `;
+                    });
+                } else {
+                    farmersHtml += '<p class="text-gray-500 text-center py-4">No farmers available</p>';
+                }
+                farmersHtml += '</div>';
+                
+                const html = `
+                    <form id="enrollFarmersForm">
+                        <input type="hidden" id="enrollTrainingId" value="${trainingId}">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium mb-2">Select Farmers to Enroll:</label>
+                            ${farmersHtml}
+                        </div>
+                        <div class="flex gap-3 mt-6">
+                            <button type="button" onclick="closeEnrollFarmersModal()" class="flex-1 bg-gray-300 py-2 rounded-lg">Cancel</button>
+                            <button type="submit" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">Save Enrollment</button>
+                        </div>
+                    </form>
+                `;
+                document.getElementById('enrollFarmersContent').innerHTML = html;
+                
+                document.getElementById('enrollFarmersForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const selectedFarmers = Array.from(document.querySelectorAll('input[name="enroll_farmer"]:checked')).map(cb => parseInt(cb.value));
+                    
+                    const submitBtn = e.target.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+                    
+                    try {
+                        const res = await fetch(`/api/v1/organization/trainings/${trainingId}/`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                            body: JSON.stringify({ farmer_ids: selectedFarmers })
+                        });
+                        const result = await res.json();
+                        if (result.success) {
+                            showToast(`${selectedFarmers.length} farmers enrolled successfully`, 'success');
+                            closeEnrollFarmersModal();
+                            await loadTrainings();
+                            await loadStats();
+                        } else {
+                            showToast(result.message || 'Failed to enroll farmers', 'error');
+                        }
+                    } catch (error) {
+                        showToast('Network error', 'error');
+                    } finally {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    }
+                });
+            } catch (error) {
+                document.getElementById('enrollFarmersContent').innerHTML = '<div class="text-center py-8 text-red-500">Error loading farmers</div>';
+            }
+        }
+
+        function closeEnrollFarmersModal() {
+            const modal = document.getElementById('enrollFarmersModal');
+            if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+            currentTrainingId = null;
+        }
+
+        function openEnrollFarmerInTraining(farmerId) {
+            if (currentData.trainings && currentData.trainings.length > 0) {
+                // Show a dropdown to select training
+                const trainingsList = currentData.trainings.map(t => 
+                    `<option value="${t.id}">${escapeHtml(t.title)} (${t.start_date} to ${t.end_date})</option>`
+                ).join('');
+                
+                const modalHtml = `
+                    <div id="enrollFarmerModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full m-4 modal-content">
+                            <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between">
+                                <h2 class="text-xl font-bold">Enroll Farmer in Training</h2>
+                                <button onclick="closeEnrollFarmerModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+                            </div>
+                            <div class="p-6">
+                                <form id="enrollFarmerForm">
+                                    <div class="mb-4">
+                                        <label class="block text-sm font-medium mb-2">Select Training:</label>
+                                        <select id="enrollTrainingSelect" class="w-full border rounded-lg px-3 py-2" required>
+                                            <option value="">Select a training</option>
+                                            ${trainingsList}
+                                        </select>
+                                    </div>
+                                    <div class="flex gap-3 mt-6">
+                                        <button type="button" onclick="closeEnrollFarmerModal()" class="flex-1 bg-gray-300 py-2 rounded-lg">Cancel</button>
+                                        <button type="submit" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700">Enroll</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Remove existing modal if any
+                const existingModal = document.getElementById('enrollFarmerModal');
+                if (existingModal) existingModal.remove();
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                
+                document.getElementById('enrollFarmerForm').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const trainingId = document.getElementById('enrollTrainingSelect').value;
+                    if (!trainingId) {
+                        showToast('Please select a training', 'error');
+                        return;
+                    }
+                    
+                    // Get current enrolled farmers
+                    const trainingRes = await fetch(`/api/v1/organization/trainings/${trainingId}/`);
+                    const trainingData = await trainingRes.json();
+                    const currentEnrolled = trainingData.enrolled_farmers?.map(f => f.id) || [];
+                    
+                    if (!currentEnrolled.includes(farmerId)) {
+                        currentEnrolled.push(farmerId);
+                    }
+                    
+                    const res = await fetch(`/api/v1/organization/trainings/${trainingId}/`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                        body: JSON.stringify({ farmer_ids: currentEnrolled })
+                    });
+                    const result = await res.json();
+                    if (result.success) {
+                        showToast('Farmer enrolled successfully', 'success');
+                        closeEnrollFarmerModal();
+                        await loadTrainings();
+                    } else {
+                        showToast(result.message || 'Failed to enroll', 'error');
+                    }
+                });
+            } else {
+                showToast('No trainings available. Create a training first.', 'warning');
+            }
+        }
+        
+        function closeEnrollFarmerModal() {
+            const modal = document.getElementById('enrollFarmerModal');
+            if (modal) modal.remove();
+        }
+
+        function renderExpensesTable(records) {
+            const tbody = document.getElementById('expensesTableBody');
+            const expenses = records.filter(r => r.total_expenses > 0);
+            if (!expenses.length) { tbody.innerHTML = '<td><td colspan="8" class="text-center py-8">No expenses recorded<\/td><tr>'; return; }
+            let html = '';
+            expenses.forEach(r => { html += `<tr class="border-b"><td class="px-4 py-3">${r.date}<\/td><td class="px-4 py-3">${r.farmer_name}<\/td><td class="px-4 py-3">${r.batch_name}<\/td><td class="px-4 py-3 text-right">UGX ${r.feed_cost.toLocaleString()}<\/td><td class="px-4 py-3 text-right">UGX ${(r.medication_cost+r.vaccine_cost).toLocaleString()}<\/td><td class="px-4 py-3 text-right">UGX ${r.labour_cost.toLocaleString()}<\/td><td class="px-4 py-3 text-right">UGX ${r.other_cost.toLocaleString()}<\/td><td class="px-4 py-3 text-right font-semibold text-red-600">UGX ${r.total_expenses.toLocaleString()}<\/td><\/tr>`; });
+            tbody.innerHTML = html;
+        }
+
+        function renderIncomesTable(records) {
+            const tbody = document.getElementById('incomesTableBody');
+            const incomes = records.filter(r => r.sales_revenue > 0);
+            if (!incomes.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8">No income recorded<\/td></td>'; return; }
+            let html = '';
+            incomes.forEach(r => { const profit = r.sales_revenue - r.total_expenses; html += `<tr class="border-b"><td class="px-4 py-3">${r.date}<\/td><td class="px-4 py-3">${r.farmer_name}<\/td><td class="px-4 py-3">${r.batch_name}<\/td><td class="px-4 py-3 text-right">${r.birds_sold_count||0}<\/td><td class="px-4 py-3 text-right">${r.eggs_sold_count||0}<\/td><td class="px-4 py-3 text-right text-green-600">UGX ${r.sales_revenue.toLocaleString()}<\/td><td class="px-4 py-3 text-right ${profit>0?'text-green-600':'text-red-600'}">UGX ${profit.toLocaleString()}<\/td><\/tr>`; });
+            tbody.innerHTML = html;
+        }
+
+        function renderPurchasesTable(purchases) {
+            const tbody = document.getElementById('purchasesTableBody');
+            if (!purchases.length) { tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8">No purchases recorded<\/td><tr>'; return; }
+            let html = '';
+            purchases.forEach(p => { html += `<tr class="border-b"><td class="px-4 py-3">${p.purchase_date}<\/td><td class="px-4 py-3">${p.feed_type}<\/td><td class="px-4 py-3 text-right">${p.quantity_kg.toLocaleString()} KG<\/td><td class="px-4 py-3 text-right">UGX ${p.cost_per_kg.toLocaleString()}<\/td><td class="px-4 py-3 text-right font-semibold">UGX ${p.total_cost.toLocaleString()}<\/td><td class="px-4 py-3">${p.supplier_name}<\/td><td class="px-4 py-3">${p.invoice_number||'N/A'}<\/td><\/tr>`; });
+            tbody.innerHTML = html;
+        }
+
+        function renderOrdersTable(orders) {
+            const tbody = document.getElementById('ordersTableBody');
+            if (!orders.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8">No orders found<\/td></td>'; return; }
+            let html = '';
+            orders.forEach(o => { html += `<tr class="border-b"><td class="px-4 py-3 font-mono">${o.order_number}<\/td><td class="px-4 py-3">${o.created_at.split(' ')[0]}<\/td><td class="px-4 py-3">${o.customer_name}<\/td><td class="px-4 py-3 text-center">${o.items_count}<\/td><td class="px-4 py-3 text-right">UGX ${o.total.toLocaleString()}<\/td><td class="px-4 py-3 text-center"><select onchange="updateOrderStatus(${o.id}, this.value)" class="text-xs border rounded px-2 py-1"><option value="PENDING" ${o.status==='PENDING'?'selected':''}>Pending</option><option value="CONFIRMED" ${o.status==='CONFIRMED'?'selected':''}>Confirmed</option><option value="PROCESSING" ${o.status==='PROCESSING'?'selected':''}>Processing</option><option value="SHIPPED" ${o.status==='SHIPPED'?'selected':''}>Shipped</option><option value="DELIVERED" ${o.status==='DELIVERED'?'selected':''}>Delivered</option><\/select><\/td><td class="px-4 py-3 text-center"><span class="badge ${o.payment_status==='PAID'?'badge-success':'badge-warning'}">${o.payment_status||'PENDING'}<\/span><\/td><td class="px-4 py-3 text-center"><button onclick="viewOrder(${o.id})" class="action-btn action-btn-view"><i class="fas fa-eye"></i><\/button><\/td><\/tr>`; });
+            tbody.innerHTML = html;
+        }
+
+        function renderRecentRecords(records) {
+            const tbody = document.getElementById('recentRecordsTable');
+            if (!records.length) { tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8">No recent records<\/td></td>'; return; }
+            let html = '';
+            records.forEach(r => { const profit = r.sales_revenue - r.total_expenses; html += `<tr class="border-b"><td class="py-2">${r.date}<\/td><td class="py-2">${r.farmer_name}<\/td><td class="py-2">${r.batch_name}<\/td><td class="py-2 text-right text-green-600">UGX ${r.sales_revenue.toLocaleString()}<\/td><td class="py-2 text-right text-red-600">UGX ${r.total_expenses.toLocaleString()}<\/td><td class="py-2 text-right ${profit>0?'text-green-600':'text-red-600'}">UGX ${profit.toLocaleString()}<\/td><\/tr>`; });
+            tbody.innerHTML = html;
+        }
+
+        function updateExpenseTotals(records) {
+            let total=0, feed=0, med=0, labour=0;
+            records.forEach(r => { total+=r.total_expenses; feed+=r.feed_cost; med+=r.medication_cost+r.vaccine_cost; labour+=r.labour_cost; });
+            document.getElementById('expenseTotal').textContent = `UGX ${total.toLocaleString()}`;
+            document.getElementById('expenseFeedTotal').textContent = `UGX ${feed.toLocaleString()}`;
+            document.getElementById('expenseMedTotal').textContent = `UGX ${med.toLocaleString()}`;
+            document.getElementById('expenseLabourTotal').textContent = `UGX ${labour.toLocaleString()}`;
+        }
+
+        function updateIncomeTotals(records) {
+            let total=0, bird=0, egg=0;
+            records.forEach(r => { total+=r.sales_revenue; bird+=(r.price_per_bird||0)*(r.birds_sold_count||0); egg+=(r.price_per_egg||0)*(r.eggs_sold_count||0); });
+            document.getElementById('incomeTotal').textContent = `UGX ${total.toLocaleString()}`;
+            document.getElementById('incomeBirdTotal').textContent = `UGX ${bird.toLocaleString()}`;
+            document.getElementById('incomeEggTotal').textContent = `UGX ${egg.toLocaleString()}`;
+        }
+
+        function updateRevenueExpenseChart(records) {
+            const monthly = {};
+            records.forEach(r => { const m = r.date.substring(0,7); if(!monthly[m]) monthly[m]={revenue:0,expenses:0}; monthly[m].revenue+=r.sales_revenue; monthly[m].expenses+=r.total_expenses; });
+            const months = Object.keys(monthly).slice(-6);
+            const revenue = months.map(m=>monthly[m].revenue);
+            const expenses = months.map(m=>monthly[m].expenses);
+            if(revenueExpenseChart) revenueExpenseChart.destroy();
+            revenueExpenseChart = new Chart(document.getElementById('revenueExpenseChart'), { type:'line', data:{ labels:months, datasets:[{ label:'Revenue', data:revenue, borderColor:'#10b981', tension:0.4 },{ label:'Expenses', data:expenses, borderColor:'#ef4444', tension:0.4 }] }, options:{ responsive:true } });
+        }
+
+        function updateFlockChart(flocks) {
+            const planned = flocks.filter(f=>f.status==='PLANNED').length;
+            const active = flocks.filter(f=>f.status==='ACTIVE').length;
+            const completed = flocks.filter(f=>f.status==='COMPLETED').length;
+            const sick = flocks.filter(f=>f.status==='SICK').length;
+            if(flockStatusChart) flockStatusChart.destroy();
+            flockStatusChart = new Chart(document.getElementById('flockStatusChart'), { type:'doughnut', data:{ labels:['Planned','Active','Completed','Sick'], datasets:[{ data:[planned,active,completed,sick], backgroundColor:['#f59e0b','#10b981','#3b82f6','#ef4444'] }] }, options:{ responsive:true, plugins:{ legend:{ position:'bottom' } } } });
+        }
+
+        // Event Listeners
+        document.getElementById('searchFarmersInput')?.addEventListener('input', e => { const term = e.target.value.toLowerCase(); renderFarmersTable(currentData.farmers.filter(f=>f.full_name.toLowerCase().includes(term)||f.phone_number.includes(term))); });
+        document.getElementById('searchFlocksInput')?.addEventListener('input', e => { const term = e.target.value.toLowerCase(); renderFlocksTable(currentData.flocks.filter(f=>f.batch_name.toLowerCase().includes(term)||f.farmer_name.toLowerCase().includes(term))); });
+        document.getElementById('searchTrainingsInput')?.addEventListener('input', e => { const term = e.target.value.toLowerCase(); renderTrainingsTable(currentData.trainings.filter(t=>t.title.toLowerCase().includes(term)||t.trainer_name.toLowerCase().includes(term))); });
+        document.getElementById('flockStatusFilter')?.addEventListener('change', e => { const status=e.target.value; renderFlocksTable(status==='all'?currentData.flocks:currentData.flocks.filter(f=>f.status===status)); });
+        document.getElementById('orderStatusFilter')?.addEventListener('change', e => { const status=e.target.value; renderOrdersTable(status==='all'?currentData.orders:currentData.orders.filter(o=>o.status===status)); });
+        document.getElementById('expenseMonthFilter')?.addEventListener('change', e => { if(e.target.value) { const filtered=currentData.dailyRecords.filter(r=>r.date.startsWith(e.target.value)); renderExpensesTable(filtered); updateExpenseTotals(filtered); } });
+        document.getElementById('incomeMonthFilter')?.addEventListener('change', e => { if(e.target.value) { const filtered=currentData.dailyRecords.filter(r=>r.date.startsWith(e.target.value)); renderIncomesTable(filtered); updateIncomeTotals(filtered); } });
+
+        // Farmer Modal Functions
+        async function viewFarmer(id) { openModal('farmerModal'); document.getElementById('farmerModalContent').innerHTML='<div class="text-center py-8"><div class="loading"></div><p class="mt-2">Loading...</p></div>'; try { const res=await fetch(`/api/v1/organization/farmers/${id}/`); const data=await res.json(); if(data.success) displayFarmerModal(data); else document.getElementById('farmerModalContent').innerHTML=`<div class="text-center py-8 text-red-500">${data.message}</div>`; } catch(e) { document.getElementById('farmerModalContent').innerHTML='<div class="text-center py-8 text-red-500">Network error</div>'; } }
+        function displayFarmerModal(data) { const f=data.farmer, flocks=data.flocks||[], fin=data.financial_summary||{}; let html=`<div class="space-y-4"><div class="grid grid-cols-2 gap-3"><div class="bg-gray-50 p-3 rounded"><p class="text-sm text-gray-500">Phone</p><p class="font-medium">${f.phone_number}</p></div><div class="bg-gray-50 p-3 rounded"><p class="text-sm text-gray-500">District</p><p class="font-medium">${f.district||'N/A'}</p></div><div class="bg-gray-50 p-3 rounded"><p class="text-sm text-gray-500">Registered</p><p class="font-medium">${f.registered_date}</p></div><div class="bg-gray-50 p-3 rounded"><p class="text-sm text-gray-500">Status</p><p class="font-medium ${f.is_active?'text-green-600':'text-red-600'}">${f.is_active?'Active':'Inactive'}</p></div></div><div class="grid grid-cols-3 gap-3"><div class="bg-green-50 p-3 rounded text-center"><p class="text-sm text-green-600">Earned</p><p class="font-bold">UGX ${(fin.total_revenue||0).toLocaleString()}</p></div><div class="bg-red-50 p-3 rounded text-center"><p class="text-sm text-red-600">Spent</p><p class="font-bold">UGX ${(fin.total_expenses||0).toLocaleString()}</p></div><div class="bg-purple-50 p-3 rounded text-center"><p class="text-sm text-purple-600">Profit</p><p class="font-bold">UGX ${(fin.net_profit||0).toLocaleString()}</p></div></div><h3 class="font-semibold">Flocks (${flocks.length})</h3>${flocks.length>0?'<div class="overflow-x-auto"><table class="min-w-full"><thead class="bg-gray-50"><tr><th class="px-3 py-2">Name</th><th class="px-3 py-2">Type</th><th class="px-3 py-2">Status</th><th class="px-3 py-2">Quantity</th><th class="px-3 py-2">Age</th></tr></thead><tbody>'+flocks.map(fl=>`<tr><td class="px-3 py-2">${fl.batch_name}</td><td class="px-3 py-2">${fl.bird_type}</td><td class="px-3 py-2"><span class="status-badge status-${fl.status}">${fl.status}</span></td><td class="px-3 py-2">${fl.current_quantity}/${fl.initial_quantity}</td><td class="px-3 py-2">${fl.age_weeks} wks</td></tr>`).join('')+'</tbody></tr></div>':'<p class="text-gray-500">No flocks</p>'}</div>`; document.getElementById('farmerModalContent').innerHTML=html; }
+
+        // Flock Modal Functions
+        async function viewFlockDetails(id) { openModal('flockModal'); document.getElementById('flockModalContent').innerHTML='<div class="text-center py-8"><div class="loading"></div><p>Loading...</p></div>'; try { const res=await fetch(`/api/v1/organization/flocks/${id}/`); const data=await res.json(); if(data.success) displayFlockModal(data); else document.getElementById('flockModalContent').innerHTML=`<div class="text-center py-8 text-red-500">${data.message}</div>`; } catch(e) { document.getElementById('flockModalContent').innerHTML='<div class="text-center py-8 text-red-500">Network error</div>'; } }
+        function displayFlockModal(data) { const f=data.flock, rec=data.daily_records||[], sum=data.summary||{}; let html=`<div class="space-y-4"><div class="grid grid-cols-2 md:grid-cols-4 gap-3"><div class="bg-gray-50 p-2 rounded"><p class="text-xs text-gray-500">Farmer</p><p class="font-medium">${f.farmer_name}</p></div><div class="bg-gray-50 p-2 rounded"><p class="text-xs text-gray-500">Farm</p><p class="font-medium">${f.farm_name}</p></div><div class="bg-gray-50 p-2 rounded"><p class="text-xs text-gray-500">Bird Type</p><p class="font-medium">${f.bird_type}</p></div><div class="bg-gray-50 p-2 rounded"><p class="text-xs text-gray-500">Status</p><span class="status-badge status-${f.status}">${f.status_display}</span></div></div><div class="grid grid-cols-4 gap-3"><div class="bg-green-50 p-2 rounded text-center"><p class="text-xs">Initial</p><p class="font-bold">${f.initial_quantity}</p></div><div class="bg-blue-50 p-2 rounded text-center"><p class="text-xs">Current</p><p class="font-bold">${f.current_quantity}</p></div><div class="bg-red-50 p-2 rounded text-center"><p class="text-xs">Mortality</p><p class="font-bold">${f.mortality_rate}%</p></div><div class="bg-purple-50 p-2 rounded text-center"><p class="text-xs">Age</p><p class="font-bold">${f.age_weeks} wks</p></div></div><div class="grid grid-cols-3 gap-3"><div class="bg-green-50 p-2 rounded text-center"><p class="text-xs">Revenue</p><p class="font-bold">UGX ${(sum.total_revenue||0).toLocaleString()}</p></div><div class="bg-red-50 p-2 rounded text-center"><p class="text-xs">Expenses</p><p class="font-bold">UGX ${(sum.total_expenses||0).toLocaleString()}</p></div><div class="bg-purple-50 p-2 rounded text-center"><p class="text-xs">Profit</p><p class="font-bold">UGX ${(sum.net_profit||0).toLocaleString()}</p></div></div><h3 class="font-semibold">Daily Records</h3>${rec.length>0?'<div class="overflow-x-auto"><table class="min-w-full"><thead class="bg-gray-50"><tr><th>Date</th><th>Opening</th><th>Mortality</th><th>Sold</th><th>Closing</th><th>Feed</th><th>Eggs</th><th>Revenue</th></tr></thead><tbody>'+rec.map(r=>`<tr><td class="px-2 py-1">${r.date}</td><td class="px-2 py-1 text-center">${r.opening_bird_count}</td><td class="px-2 py-1 text-center text-red-600">${r.mortality}</td><td class="px-2 py-1 text-center">${r.birds_sold}</td><td class="px-2 py-1 text-center">${r.closing_bird_count}</td><td class="px-2 py-1 text-right">${r.feed_consumed_kg}</td><td class="px-2 py-1 text-center">${r.eggs_collected}</td><td class="px-2 py-1 text-right text-green-600">UGX ${(r.sales_revenue||0).toLocaleString()}</td></tr>`).join('')+'</tbody></table></div>':'<p class="text-gray-500">No daily records</p>'}</div>`; document.getElementById('flockModalContent').innerHTML=html; }
+
+        // Training Detail Functions
+        async function viewTrainingDetails(trainingId) {
+            openModal('trainingDetailModal');
+            document.getElementById('trainingDetailContent').innerHTML = '<div class="text-center py-8"><div class="loading"></div><p>Loading training details...</p></div>';
+            document.getElementById('trainingDetailModalTitle').textContent = 'Training Details';
+            
+            try {
+                const res = await fetch(`/api/v1/organization/trainings/${trainingId}/`);
+                const data = await res.json();
+                
+                if (data.success) {
+                    displayTrainingDetails(data);
+                } else {
+                    document.getElementById('trainingDetailContent').innerHTML = `<div class="text-center py-8 text-red-500">${data.message}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('trainingDetailContent').innerHTML = '<div class="text-center py-8 text-red-500">Network error</div>';
+            }
+        }
+
+        function displayTrainingDetails(data) {
+            const t = data.training;
+            const farmers = data.enrolled_farmers || [];
+            const statusClass = t.status === 'UPCOMING' ? 'status-training-upcoming' : (t.status === 'ONGOING' ? 'status-training-ongoing' : 'status-training-completed');
+            
+            let farmersHtml = '';
+            if (farmers.length > 0) {
+                farmersHtml = `<div class="overflow-x-auto mt-2"><table class="min-w-full"><thead class="bg-gray-50"><tr><th class="px-3 py-2">Name</th><th class="px-3 py-2">Phone</th></td></thead><tbody>${farmers.map(f => `<tr><td class="px-3 py-2">${escapeHtml(f.full_name)}</td><td class="px-3 py-2">${f.phone_number}</td></tr>`).join('')}</tbody></table></div>`;
+            } else {
+                farmersHtml = '<p class="text-gray-500">No farmers enrolled yet</p>';
+            }
+            
+            const html = `
+                <div class="space-y-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-xl font-bold">${escapeHtml(t.title)}</h3>
+                            <select onchange="updateTrainingStatusFromDetail(${t.id}, this.value)" class="status-badge ${statusClass} mt-1">
+                                <option value="UPCOMING" ${t.status === 'UPCOMING' ? 'selected' : ''}>Upcoming</option>
+                                <option value="ONGOING" ${t.status === 'ONGOING' ? 'selected' : ''}>Ongoing</option>
+                                <option value="COMPLETED" ${t.status === 'COMPLETED' ? 'selected' : ''}>Completed</option>
+                                <option value="CANCELLED" ${t.status === 'CANCELLED' ? 'selected' : ''}>Cancelled</option>
+                            </select>
+                        </div>
+                        <div>
+                            <button onclick="editTrainingFromDetail(${t.id})" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 mr-2">
+                                <i class="fas fa-edit mr-2"></i>Edit
+                            </button>
+                            <button onclick="openEnrollFarmersModal(${t.id}, '${escapeHtml(t.title)}')" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+                                <i class="fas fa-user-plus mr-2"></i>Enroll Farmers
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="bg-gray-50 p-2 rounded"><p class="text-xs text-gray-500">Dates</p><p class="font-medium">${t.start_date} to ${t.end_date}</p></div>
+                        <div class="bg-gray-50 p-2 rounded"><p class="text-xs text-gray-500">Duration</p><p class="font-medium">${t.duration_days || Math.ceil((new Date(t.end_date) - new Date(t.start_date)) / (1000*60*60*24)) + 1} days</p></div>
+                        <div class="bg-gray-50 p-2 rounded"><p class="text-xs text-gray-500">Venue</p><p class="font-medium">${escapeHtml(t.venue)}</p></div>
+                        <div class="bg-gray-50 p-2 rounded"><p class="text-xs text-gray-500">Trainer</p><p class="font-medium">${escapeHtml(t.trainer_name)}</p></div>
+                        <div class="bg-gray-50 p-2 rounded"><p class="text-xs text-gray-500">Training Type</p><p class="font-medium">${t.training_type_display || t.training_type}</p></div>
+                        <div class="bg-gray-50 p-2 rounded"><p class="text-xs text-gray-500">Expected Participants</p><p class="font-medium">${t.expected_participants || 0}</p></div>
+                    </div>
+                    
+                    ${t.topics_covered ? `<div><h4 class="font-semibold">Topics Covered</h4><p class="text-gray-600">${escapeHtml(t.topics_covered)}</p></div>` : ''}
+                    ${t.description ? `<div><h4 class="font-semibold">Description</h4><p class="text-gray-600">${escapeHtml(t.description)}</p></div>` : ''}
+                    
+                    <div>
+                        <h4 class="font-semibold">Enrolled Farmers (${farmers.length})</h4>
+                        ${farmersHtml}
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('trainingDetailContent').innerHTML = html;
+            document.getElementById('trainingDetailModalTitle').textContent = `Training: ${t.title}`;
+        }
+
+        async function updateTrainingStatusFromDetail(trainingId, status) {
+            await updateTrainingStatus(trainingId, status);
+            await viewTrainingDetails(trainingId);
+        }
+
+        // Edit Training Functions
+        async function editTraining(trainingId) {
+            openModal('editTrainingModal');
+            document.getElementById('editTrainingContent').innerHTML = '<div class="text-center py-8"><div class="loading"></div><p>Loading training data...</p></div>';
+            
+            try {
+                const res = await fetch(`/api/v1/organization/trainings/${trainingId}/`);
+                const data = await res.json();
+                
+                if (data.success) {
+                    displayEditTrainingForm(data);
+                } else {
+                    document.getElementById('editTrainingContent').innerHTML = `<div class="text-center py-8 text-red-500">${data.message}</div>`;
+                }
+            } catch (error) {
+                document.getElementById('editTrainingContent').innerHTML = '<div class="text-center py-8 text-red-500">Network error</div>';
+            }
+        }
+
+        function editTrainingFromDetail(trainingId) {
+            closeTrainingDetailModal();
+            editTraining(trainingId);
+        }
+
+        function displayEditTrainingForm(data) {
+            const t = data.training;
+            const enrolledFarmers = data.enrolled_farmers || [];
+            const enrolledIds = enrolledFarmers.map(f => f.id);
+            
+            let farmersHtml = '';
+            if (currentData.farmers && currentData.farmers.length > 0) {
+                currentData.farmers.forEach(farmer => {
+                    const isChecked = enrolledIds.includes(farmer.id);
+                    farmersHtml += `
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="farmer_ids" value="${farmer.id}" ${isChecked ? 'checked' : ''}>
+                            <span class="text-sm">${escapeHtml(farmer.full_name)} (${farmer.phone_number})</span>
+                        </label>
+                    `;
+                });
+            } else {
+                farmersHtml = '<p class="text-gray-500">Loading farmers...</p>';
+            }
+            
+            const html = `
+                <form id="editTrainingForm">
+                    <input type="hidden" id="editTrainingId" value="${t.id}">
+                    <div class="mb-3"><label class="block text-sm font-medium mb-1">Training Title *</label><input type="text" id="editTitle" value="${escapeHtml(t.title)}" required class="w-full border rounded-lg px-3 py-2"></div>
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        <div><label class="block text-sm font-medium mb-1">Start Date *</label><input type="date" id="editStartDate" value="${t.start_date}" required class="w-full border rounded-lg px-3 py-2"></div>
+                        <div><label class="block text-sm font-medium mb-1">End Date *</label><input type="date" id="editEndDate" value="${t.end_date}" required class="w-full border rounded-lg px-3 py-2"></div>
+                    </div>
+                    <div class="mb-3"><label class="block text-sm font-medium mb-1">Venue *</label><input type="text" id="editVenue" value="${escapeHtml(t.venue)}" required class="w-full border rounded-lg px-3 py-2"></div>
+                    <div class="mb-3"><label class="block text-sm font-medium mb-1">Trainer Name *</label><input type="text" id="editTrainerName" value="${escapeHtml(t.trainer_name)}" required class="w-full border rounded-lg px-3 py-2"></div>
+                    <div class="mb-3"><label class="block text-sm font-medium mb-1">Training Type</label><select id="editTrainingType" class="w-full border rounded-lg px-3 py-2">
+                        <option value="POULTRY_HEALTH" ${t.training_type === 'POULTRY_HEALTH' ? 'selected' : ''}>Poultry Health Management</option>
+                        <option value="FEED_FORMULATION" ${t.training_type === 'FEED_FORMULATION' ? 'selected' : ''}>Feed Formulation</option>
+                        <option value="RECORD_KEEPING" ${t.training_type === 'RECORD_KEEPING' ? 'selected' : ''}>Record Keeping</option>
+                        <option value="BREEDING" ${t.training_type === 'BREEDING' ? 'selected' : ''}>Breeding Techniques</option>
+                        <option value="MARKETING" ${t.training_type === 'MARKETING' ? 'selected' : ''}>Marketing & Sales</option>
+                        <option value="BIO_SECURITY" ${t.training_type === 'BIO_SECURITY' ? 'selected' : ''}>Bio-security</option>
+                        <option value="OTHER" ${t.training_type === 'OTHER' ? 'selected' : ''}>Other</option>
+                    </select></div>
+                    <div class="mb-3"><label class="block text-sm font-medium mb-1">Status</label><select id="editStatus" class="w-full border rounded-lg px-3 py-2">
+                        <option value="UPCOMING" ${t.status === 'UPCOMING' ? 'selected' : ''}>Upcoming</option>
+                        <option value="ONGOING" ${t.status === 'ONGOING' ? 'selected' : ''}>Ongoing</option>
+                        <option value="COMPLETED" ${t.status === 'COMPLETED' ? 'selected' : ''}>Completed</option>
+                        <option value="CANCELLED" ${t.status === 'CANCELLED' ? 'selected' : ''}>Cancelled</option>
+                    </select></div>
+                    <div class="mb-3"><label class="block text-sm font-medium mb-1">Expected Participants</label><input type="number" id="editExpectedParticipants" value="${t.expected_participants || 0}" class="w-full border rounded-lg px-3 py-2"></div>
+                    <div class="mb-3"><label class="block text-sm font-medium mb-1">Topics Covered</label><textarea id="editTopicsCovered" rows="2" class="w-full border rounded-lg px-3 py-2">${escapeHtml(t.topics_covered || '')}</textarea></div>
+                    <div class="mb-3"><label class="block text-sm font-medium mb-1">Description</label><textarea id="editDescription" rows="2" class="w-full border rounded-lg px-3 py-2">${escapeHtml(t.description || '')}</textarea></div>
+                    <div class="mb-3"><label class="block text-sm font-medium mb-1">Notes</label><textarea id="editNotes" rows="2" class="w-full border rounded-lg px-3 py-2">${escapeHtml(t.notes || '')}</textarea></div>
+                    <div class="mb-3"><label class="block text-sm font-medium mb-1">Enroll Farmers</label><div class="checkbox-group">${farmersHtml}</div><p class="text-xs text-gray-500 mt-1">Check farmers to enroll in this training</p></div>
+                    <div class="flex gap-3 mt-4"><button type="button" onclick="closeEditTrainingModal()" class="flex-1 bg-gray-300 py-2 rounded-lg">Cancel</button><button type="submit" class="flex-1 bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700">Save Changes</button></div>
+                </form>
+            `;
+            
+            document.getElementById('editTrainingContent').innerHTML = html;
+            
+            document.getElementById('editTrainingForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const trainingId = document.getElementById('editTrainingId').value;
+                const selectedFarmers = Array.from(document.querySelectorAll('input[name="farmer_ids"]:checked')).map(cb => parseInt(cb.value));
+                
+                const data = {
+                    title: document.getElementById('editTitle').value,
+                    start_date: document.getElementById('editStartDate').value,
+                    end_date: document.getElementById('editEndDate').value,
+                    venue: document.getElementById('editVenue').value,
+                    trainer_name: document.getElementById('editTrainerName').value,
+                    training_type: document.getElementById('editTrainingType').value,
+                    status: document.getElementById('editStatus').value,
+                    expected_participants: parseInt(document.getElementById('editExpectedParticipants').value) || 0,
+                    topics_covered: document.getElementById('editTopicsCovered').value,
+                    description: document.getElementById('editDescription').value,
+                    notes: document.getElementById('editNotes').value,
+                    farmer_ids: selectedFarmers
+                };
+                
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+                
+                try {
+                    const res = await fetch(`/api/v1/organization/trainings/${trainingId}/`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await res.json();
+                    if (result.success) {
+                        showToast('Training updated successfully', 'success');
+                        closeEditTrainingModal();
+                        await loadTrainings();
+                        await loadStats();
+                    } else {
+                        showToast(result.message || 'Failed to update', 'error');
+                    }
+                } catch (error) {
+                    showToast('Network error', 'error');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            });
+        }
+
+        // Modal control functions
+        function openModal(id) { const m = document.getElementById(id); if(m) { m.classList.remove('hidden'); m.classList.add('flex'); } }
+        function closeFarmerModal() { const m = document.getElementById('farmerModal'); if(m) { m.classList.add('hidden'); m.classList.remove('flex'); } }
+        function closeFlockModal() { const m = document.getElementById('flockModal'); if(m) { m.classList.add('hidden'); m.classList.remove('flex'); } }
+        function closeTrainingDetailModal() { const m = document.getElementById('trainingDetailModal'); if(m) { m.classList.add('hidden'); m.classList.remove('flex'); } }
+        function closeEditTrainingModal() { const m = document.getElementById('editTrainingModal'); if(m) { m.classList.add('hidden'); m.classList.remove('flex'); } }
+        function openAddTrainingModal() { openModal('addTrainingModal'); document.getElementById('trainingTitle').focus(); }
+        function closeAddTrainingModal() { const m = document.getElementById('addTrainingModal'); if(m) { m.classList.add('hidden'); m.classList.remove('flex'); document.getElementById('addTrainingForm').reset(); } }
+
+        // Training Form Submit
+        document.getElementById('addTrainingForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('trainingTitle').value.trim();
+            const startDate = document.getElementById('trainingStartDate').value;
+            const endDate = document.getElementById('trainingEndDate').value;
+            const venue = document.getElementById('trainingVenue').value.trim();
+            const trainerName = document.getElementById('trainingTrainer').value.trim();
+            const trainingType = document.getElementById('trainingType').value;
+            const expectedParticipants = parseInt(document.getElementById('trainingExpectedParticipants').value) || 0;
+            const topicsCovered = document.getElementById('trainingTopics').value.trim();
+            
+            if (!title || !startDate || !endDate || !venue || !trainerName) { showToast('Please fill all required fields', 'error'); return; }
+            if (new Date(startDate) > new Date(endDate)) { showToast('End date must be after start date', 'error'); return; }
+            
+            const data = { title, start_date: startDate, end_date: endDate, venue, trainer_name: trainerName, training_type: trainingType, expected_participants: expectedParticipants, topics_covered: topicsCovered, description: '', district: '', village: '', status: 'UPCOMING' };
+            
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Scheduling...';
+            
+            try {
+                const res = await fetch('/api/v1/organization/trainings/', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken }, body: JSON.stringify(data) });
+                const result = await res.json();
+                if (res.ok && result.success) { showToast('Training scheduled successfully!', 'success'); closeAddTrainingModal(); await loadTrainings(); await loadStats(); }
+                else { let errorMsg = 'Failed to schedule training'; if (result.errors) { const errors = Object.values(result.errors).flat(); errorMsg = errors.join(', '); } else if (result.message) errorMsg = result.message; showToast(errorMsg, 'error'); }
+            } catch (error) { showToast('Network error. Please try again.', 'error');
+            } finally { submitBtn.disabled = false; submitBtn.innerHTML = originalText; }
+        });
+
+        // Other functions
+        async function updateOrderStatus(orderId, status) {
+            try { const res=await fetch(`/api/v1/organization/orders/${orderId}/`, { method:'PUT', headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken}, body:JSON.stringify({status}) }); if((await res.json()).success) { showToast('Order updated','success'); await loadOrders(); } } catch(e){ showToast('Error','error'); }
+        }
+
+        function viewFarmerFlocks(farmerId) { showSection('flocks'); const filtered=currentData.flocks.filter(f=>f.farmer_id===farmerId); renderFlocksTable(filtered); showToast(`Showing ${filtered.length} flocks`, filtered.length?'success':'warning'); }
+        function viewOrder(id) { showToast('Order details coming soon', 'info'); }
+        function addExpense() { showToast('Add expense coming soon', 'info'); }
+        function addIncome() { showToast('Add income coming soon', 'info'); }
+        function addPurchase() { showToast('Add purchase coming soon', 'info'); }
+        function generateFinancialReport() { showToast('Financial report coming soon', 'info'); }
+        function generateFlockReport() { showToast('Flock report coming soon', 'info'); }
+        function generateFarmerReport() { showToast('Farmer report coming soon', 'info'); }
+        function exportFarmers() { const data=JSON.stringify(currentData.farmers,null,2); const blob=new Blob([data],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`farmers_${new Date().toISOString().split('T')[0]}.json`; a.click(); URL.revokeObjectURL(blob); showToast('Exported','success'); }
+
+        function showToast(msg, type) { const toast=document.createElement('div'); toast.className=`fixed bottom-4 right-4 px-4 py-2 rounded-lg text-white z-50 shadow-lg ${type==='success'?'bg-green-500':type==='error'?'bg-red-500':'bg-blue-500'}`; toast.innerHTML=`<i class="fas ${type==='success'?'fa-check-circle':type==='error'?'fa-exclamation-circle':'fa-info-circle'} mr-2"></i>${msg}`; document.body.appendChild(toast); setTimeout(()=>{toast.style.opacity='0'; toast.style.transform='translateX(100%)'; setTimeout(()=>toast.remove(),300);},3000); }
+        function escapeHtml(t){if(!t)return ''; const d=document.createElement('div'); d.textContent=t; return d.innerHTML;}
+        function logout(){ if(confirm('Logout?')) fetch('/api/v1/auth/logout/',{method:'POST',headers:{'X-CSRFToken':csrftoken}}).then(()=>window.location.href='/login/').catch(()=>window.location.href='/login/'); }
+
+        function loadUserData() {
+            const el=document.getElementById('user-data');
+            if(el) try { const d=JSON.parse(el.textContent); document.getElementById('userName').textContent=d.full_name||'User'; document.getElementById('userRole').textContent=d.role||'Organization'; document.getElementById('userPhone').textContent=d.phone_number||'N/A'; document.getElementById('orgName').textContent=d.organization_name||'Organization'; document.getElementById('orgTypeDisplay').textContent=d.organization_type||'NGO'; document.getElementById('tenantCode').textContent=d.tenant_code||'N/A'; document.getElementById('welcomeMessage').textContent=`Welcome back, ${d.full_name||'User'}!`; } catch(e){ console.error(e); }
+        }
+
+        loadUserData();
+        loadDashboardData();
+    </script>
+</body>
+</html>

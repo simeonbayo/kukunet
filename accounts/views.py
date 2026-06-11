@@ -1,9 +1,11 @@
 # accounts/views.py
 import logging
 from rest_framework import generics, status, views
+from django.utils.text import slugify
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.throttling import AnonRateThrottle
+from django.db import transaction
 from django.contrib.auth import logout as django_logout, login as django_login
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -15,6 +17,7 @@ from .serializers import (
     UserSerializer, 
     UserProfileSerializer
 )
+from tenants.models import Tenant  # <-- ADD THIS IMPORT AT THE TOP
 
 logger = logging.getLogger(__name__)
 
@@ -25,6 +28,7 @@ class RegisterView(generics.CreateAPIView):
     authentication_classes = []
     throttle_classes = [AnonRateThrottle]
     
+    @transaction.atomic
     def create(self, request, *args, **kwargs):
         logger.info(f"Registration attempt from {request.META.get('REMOTE_ADDR', 'unknown')}")
         logger.info(f"Request data: {request.data}")
@@ -43,16 +47,52 @@ class RegisterView(generics.CreateAPIView):
             user = serializer.save()
             logger.info(f"User registered successfully: {user.phone_number} (Role: {user.role})")
             
-            # Create tenant based on user role
-            from tenants.models import Tenant
+            # Handle tenant assignment based on role and join code
+            organization_join_code = request.data.get('organization_join_code', '')
             
-            # Create tenant for FARMER role
-            if user.role == 'FARMER':
+            # If farmer and has organization join code, join existing organization
+            if user.role == 'FARMER' and organization_join_code:
+                try:
+                    # Find the organization tenant by code
+                    org_tenant = Tenant.objects.get(tenant_code=organization_join_code, is_active=True)
+                    user.tenant = org_tenant
+                    user.save(update_fields=['tenant'])
+                    logger.info(f"Farmer {user.phone_number} joined organization: {org_tenant.name}")
+                    
+                    return Response({
+                        'success': True,
+                        'message': f'Registration successful! You have joined {org_tenant.name}.',
+                        'data': {
+                            'user_id': user.id,
+                            'phone_number': user.phone_number,
+                            'full_name': user.full_name,
+                            'role': user.role,
+                            'tenant_id': user.tenant.id if user.tenant else None,
+                            'tenant_name': user.tenant.name if user.tenant else None,
+                            'joined_organization': True,
+                            'organization_name': org_tenant.name
+                        }
+                    }, status=status.HTTP_201_CREATED)
+                except Tenant.DoesNotExist:
+                    logger.warning(f"Invalid organization code: {organization_join_code}")
+                    # Fall through to create individual tenant
+            
+            # Create tenant for FARMER role (individual farmer)
+            if user.role == 'FARMER' and not user.tenant:
                 tenant_name = f"{user.full_name}'s Farm" if user.full_name else f"Farmer_{user.phone_number}"
+                
+                # Generate unique slug
+                base_slug = slugify(tenant_name)
+                slug = base_slug
+                counter = 1
+                while Tenant.objects.filter(slug=slug).exists():
+                    slug = f"{base_slug}-{counter}"
+                    counter += 1
+                
                 tenant, created = Tenant.objects.get_or_create(
                     name=tenant_name,
                     defaults={
-                        'slug': slugify(tenant_name)[:50],
+                        'slug': slug,
                         'tenant_code': f"FARM{user.id}{str(user.id).zfill(4)}",
                         'subscription_plan': 'BASIC',
                         'status': 'ACTIVE',
@@ -66,17 +106,23 @@ class RegisterView(generics.CreateAPIView):
                     user.tenant = tenant
                     user.save(update_fields=['tenant'])
                     logger.info(f"Created farmer tenant: {tenant_name} for user {user.phone_number}")
-                else:
-                    logger.info(f"Farmer tenant already exists: {tenant_name}")
             
             # Create tenant for ORGANIZATION role
-            elif user.role == 'ORGANIZATION':
+            elif user.role == 'ORGANIZATION' and not user.tenant:
                 # Use organization name or create from type
                 if user.organization_name:
                     tenant_name = user.organization_name
                 else:
-                    org_type_display = dict(user.ORGANIZATION_TYPES).get(user.organization_type, 'Organization')
+                    org_type_display = dict(User.ORGANIZATION_TYPES).get(user.organization_type, 'Organization')
                     tenant_name = f"{org_type_display}_{user.phone_number}"
+                
+                # Generate unique slug
+                base_slug = slugify(tenant_name)
+                slug = base_slug
+                counter = 1
+                while Tenant.objects.filter(slug=slug).exists():
+                    slug = f"{base_slug}-{counter}"
+                    counter += 1
                 
                 # Determine plan based on organization type
                 if user.organization_type == 'AGRIBUSINESS':
@@ -107,7 +153,7 @@ class RegisterView(generics.CreateAPIView):
                 tenant, created = Tenant.objects.get_or_create(
                     name=tenant_name,
                     defaults={
-                        'slug': slugify(tenant_name)[:50],
+                        'slug': slug,
                         'tenant_code': f"ORG{user.id}{str(user.id).zfill(4)}",
                         'subscription_plan': subscription_plan,
                         'status': 'ACTIVE',
@@ -121,16 +167,9 @@ class RegisterView(generics.CreateAPIView):
                     user.tenant = tenant
                     user.save(update_fields=['tenant'])
                     logger.info(f"Created organization tenant: {tenant_name} for {user.organization_type}")
-                else:
-                    # Assign existing tenant if not already assigned
-                    if not user.tenant:
-                        user.tenant = tenant
-                        user.save(update_fields=['tenant'])
-                        logger.info(f"Assigned existing tenant: {tenant_name} to user {user.phone_number}")
             
-            # For other roles, assign to default tenant or create individual tenant
-            else:
-                # Get or create a default tenant for other roles
+            # For other roles, assign to default tenant
+            elif not user.tenant:
                 default_tenant, created = Tenant.objects.get_or_create(
                     name="Default Tenant",
                     defaults={
@@ -145,9 +184,18 @@ class RegisterView(generics.CreateAPIView):
                 user.save(update_fields=['tenant'])
                 logger.info(f"Assigned default tenant to {user.role} user: {user.phone_number}")
             
+            # Prepare response message
+            message = 'Registration successful'
+            if user.role == 'FARMER' and organization_join_code:
+                message = f'Registration successful! You have joined {user.tenant.name}.'
+            elif user.role == 'FARMER':
+                message = 'Registration successful! Your farm has been created.'
+            elif user.role == 'ORGANIZATION':
+                message = f'Registration successful! Your organization "{user.tenant.name}" has been created.'
+            
             return Response({
                 'success': True,
-                'message': 'Registration successful',
+                'message': message,
                 'data': {
                     'user_id': user.id,
                     'phone_number': user.phone_number,
@@ -157,6 +205,7 @@ class RegisterView(generics.CreateAPIView):
                     'organization_name': getattr(user, 'organization_name', None),
                     'tenant_id': user.tenant.id if user.tenant else None,
                     'tenant_name': user.tenant.name if user.tenant else None,
+                    'tenant_code': user.tenant.tenant_code if user.tenant else None,
                     'specialization': getattr(user, 'specialization', None),
                 }
             }, status=status.HTTP_201_CREATED)
@@ -197,7 +246,7 @@ class LoginView(views.APIView):
                 }, status=status.HTTP_401_UNAUTHORIZED)
             
             if user.verify_pin(pin):
-                # THIS IS THE KEY FIX - Create Django session
+                # Create Django session
                 django_login(request, user)
                 
                 return Response({

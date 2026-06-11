@@ -19,7 +19,9 @@ urlpatterns = [
     path('api/v1/', include('marketplace.urls')),
     path('api/v1/', include('courses.urls')),
     path('api/v1/tenants/', include('tenants.urls')),
-    path('api/v1/analytics/', include('analytics.urls')),  # Add this line
+    path('api/v1/analytics/', include('analytics.urls')),  
+    path('api/v1/organization/', include('organizations.urls')),
+    path('', include('trainings.urls')),
     path('', include('frontend.urls')),
 ]
 

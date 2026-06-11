@@ -36,6 +36,14 @@ urlpatterns = [
 
     # Add this URL pattern
     path('farm/flock/<int:flock_id>/feed/', views.feed_management_view, name='feed_management'),
+    path('farmer/orders/', views.farmer_orders_view, name='farmer_orders'),
+
+    # frontend/urls.py
+    path('organizations/farmers/<int:farmer_id>/', views.farmer_detail_view, name='farmer-detail-html'),
+    path('organizations/flocks/<int:flock_id>/', views.flock_detail_view, name='flock-detail-html'),
+
+    # Order tracking page
+    path('orders/<int:order_id>/track/', views.order_track_view, name='order_track'),
     
     # Organization type dashboards
     path('organization/', views.organization_default_dashboard_view, name='organization_default_dashboard'),
@@ -71,6 +79,8 @@ urlpatterns = [
     
     # Profile
     path('profile/', views.profile_view, name='profile'),
+
+    path('support/', views.support_view, name='support'),
 ]
 
 # Print for debugging

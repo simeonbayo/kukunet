@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'frontend',
     'field_officer',
     'organizations',
+    'trainings',
 ]
 
 MIDDLEWARE = [

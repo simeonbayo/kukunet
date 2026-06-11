@@ -1,0 +1,38 @@
+<!-- templates/support.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Support - KUKUNET{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-white rounded-xl shadow-md p-6">
+            <h1 class="text-2xl font-bold text-gray-800 mb-4">Contact Support</h1>
+            
+            <div class="space-y-4">
+                <div>
+                    <h2 class="font-semibold text-lg">📞 Phone Support</h2>
+                    <p class="text-gray-600">+256 703512486</p>
+                    <p class="text-sm text-gray-500">Mon-Fri, 9am - 5pm</p>
+                </div>
+                
+                <div>
+                    <h2 class="font-semibold text-lg">✉️ Email Support</h2>
+                    <p class="text-gray-600">support@kukunet.com</p>
+                    <p class="text-sm text-gray-500">24/7 response within 24 hours</p>
+                </div>
+                
+                <div>
+                    <h2 class="font-semibold text-lg">💬 Live Chat</h2>
+                    <p class="text-gray-600">Available on weekdays</p>
+                </div>
+            </div>
+            
+            <div class="mt-6 pt-4 border-t">
+                <a href="/" class="text-green-600 hover:text-green-700">← Back to Home</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

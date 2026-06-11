@@ -273,6 +273,8 @@ class CartViewSet(viewsets.GenericViewSet):
             }, status=status.HTTP_201_CREATED)
 
 
+# marketplace/views.py - Update OrderViewSet with track endpoint
+
 class OrderViewSet(viewsets.ReadOnlyModelViewSet):
     """Customer order viewing"""
     serializer_class = OrderSerializer
@@ -280,10 +282,140 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
     
     def get_queryset(self):
         user = self.request.user
-        if user.is_superuser or getattr(user, 'role', '') == 'ADMIN':
+        # Super admin and admin can see all orders
+        if user.is_superuser or getattr(user, 'role', '') in ['ADMIN', 'SUPER_ADMIN']:
             return Order.objects.all()
-        # Farmers see their own orders
+        # Farmers and customers see their own orders
         return Order.objects.filter(user=user)
+    
+    def list(self, request, *args, **kwargs):
+        """List orders with filtering by status"""
+        queryset = self.get_queryset()
+        
+        # Filter by status if provided
+        status = request.query_params.get('status')
+        if status:
+            queryset = queryset.filter(status=status)
+        
+        # Order by most recent first
+        queryset = queryset.order_by('-created_at')
+        
+        # Pagination
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['get'])
+    def track(self, request, pk=None):
+        """Track order status and get tracking information"""
+        order = self.get_object()
+        
+        # Build tracking timeline
+        timeline = []
+        
+        # Order placed
+        timeline.append({
+            'status': 'Order Placed',
+            'date': order.created_at.isoformat(),
+            'description': 'Your order has been placed successfully',
+            'completed': True
+        })
+        
+        # Payment confirmed
+        if order.payment_status == 'PAID' or order.paid_at:
+            timeline.append({
+                'status': 'Payment Confirmed',
+                'date': (order.paid_at or order.updated_at).isoformat(),
+                'description': 'Payment has been received and confirmed',
+                'completed': True
+            })
+        else:
+            timeline.append({
+                'status': 'Payment Confirmed',
+                'date': None,
+                'description': 'Awaiting payment confirmation',
+                'completed': False
+            })
+        
+        # Order confirmed
+        if order.status in ['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED']:
+            timeline.append({
+                'status': 'Order Confirmed',
+                'date': order.updated_at.isoformat(),
+                'description': 'Your order has been confirmed and is being processed',
+                'completed': True
+            })
+        elif order.status != 'CANCELLED':
+            timeline.append({
+                'status': 'Order Confirmed',
+                'date': None,
+                'description': 'Awaiting order confirmation',
+                'completed': False
+            })
+        
+        # Order shipped
+        if order.status in ['SHIPPED', 'DELIVERED']:
+            timeline.append({
+                'status': 'Order Shipped',
+                'date': order.updated_at.isoformat(),
+                'description': f'Your order has been shipped. Tracking number: {getattr(order, "tracking_number", "N/A")}',
+                'completed': True
+            })
+        elif order.status not in ['CANCELLED', 'DELIVERED']:
+            timeline.append({
+                'status': 'Order Shipped',
+                'date': None,
+                'description': 'Awaiting shipment',
+                'completed': False
+            })
+        
+        # Order delivered
+        if order.status == 'DELIVERED':
+            timeline.append({
+                'status': 'Order Delivered',
+                'date': (order.delivered_at or order.updated_at).isoformat(),
+                'description': 'Your order has been delivered successfully',
+                'completed': True
+            })
+        elif order.status not in ['CANCELLED', 'DELIVERED']:
+            timeline.append({
+                'status': 'Order Delivered',
+                'date': None,
+                'description': 'Awaiting delivery',
+                'completed': False
+            })
+        
+        # Order cancelled
+        if order.status == 'CANCELLED':
+            timeline.append({
+                'status': 'Order Cancelled',
+                'date': order.updated_at.isoformat(),
+                'description': 'Your order has been cancelled',
+                'completed': True
+            })
+        
+        # Calculate estimated delivery date (7 days from order date if shipped)
+        estimated_delivery = None
+        if order.status in ['SHIPPED', 'DELIVERED']:
+            estimated_delivery = (order.created_at + timedelta(days=7)).date()
+        
+        tracking_info = {
+            'order_number': order.order_number,
+            'status': order.status,
+            'created_at': order.created_at,
+            'updated_at': order.updated_at,
+            'estimated_delivery': estimated_delivery,
+            'timeline': timeline,
+            'current_location': getattr(order, 'current_location', 'Processing Center'),
+            'carrier': getattr(order, 'carrier', 'KUKUNET Logistics'),
+            'tracking_number': getattr(order, 'tracking_number', None)
+        }
+        
+        return Response(tracking_info)
     
     @action(detail=True, methods=['post'])
     def cancel(self, request, pk=None):
@@ -309,38 +441,6 @@ class OrderViewSet(viewsets.ReadOnlyModelViewSet):
                 order.invoice.save()
         
         return Response({'message': 'Order cancelled successfully'})
-    
-    @action(detail=True, methods=['get'])
-    def track(self, request, pk=None):
-        """Track order status"""
-        order = self.get_object()
-        
-        tracking_info = {
-            'order_number': order.order_number,
-            'status': order.status,
-            'created_at': order.created_at,
-            'updated_at': order.updated_at,
-            'estimated_delivery': (order.created_at + timedelta(days=7)).date() if order.status == 'SHIPPED' else None,
-            'history': [
-                {'status': 'Order Placed', 'date': order.created_at, 'description': 'Order has been placed'},
-            ]
-        }
-        
-        if order.paid_at:
-            tracking_info['history'].append(
-                {'status': 'Payment Confirmed', 'date': order.paid_at, 'description': 'Payment has been received'}
-            )
-        
-        if order.status == 'SHIPPED':
-            tracking_info['history'].append(
-                {'status': 'Shipped', 'date': order.updated_at, 'description': 'Order has been shipped'}
-            )
-        elif order.status == 'DELIVERED':
-            tracking_info['history'].append(
-                {'status': 'Delivered', 'date': order.delivered_at, 'description': 'Order has been delivered'}
-            )
-        
-        return Response(tracking_info)
 
 
 class AdminOrderViewSet(viewsets.ModelViewSet):
