@@ -721,7 +721,7 @@ class VaccinationSchedule(models.Model):
     bird_type = models.CharField(max_length=20, choices=BIRD_TYPES)
     week_number = models.IntegerField()
     vaccine_name = models.CharField(max_length=100)
-    vaccine_type = models.CharField(max_length=30, choices=VACCINE_TYPES, default='NEWCASTLE')
+    vaccine_type = models.CharField(max_length=30, choices=VACCINE_TYPES)
     administration_method = models.CharField(max_length=50)
     dosage = models.CharField(max_length=100, blank=True)
     is_required = models.BooleanField(default=True)
@@ -756,8 +756,14 @@ class VaccinationRecord(models.Model):
     tenant = models.ForeignKey('tenants.Tenant', on_delete=models.CASCADE, related_name='vaccinations')
     batch = models.ForeignKey(FlockBatch, on_delete=models.CASCADE, related_name='vaccinations')
     
-    
-    vaccine_type = models.CharField(max_length=30, choices=VaccinationSchedule.VACCINE_TYPES, default='NEWCASTLE')
+    # FIX: Add a default value and null=True to avoid migration issues
+    vaccine_name = models.CharField(max_length=100, default='', blank=True)  # Add this if missing
+    vaccine_type = models.CharField(
+        max_length=30, 
+        choices=VaccinationSchedule.VACCINE_TYPES, 
+        default='OTHER',  # Add a default value
+        blank=True  # Allow blank for existing records
+    )
     manufacturer = models.CharField(max_length=100, blank=True)
     batch_number = models.CharField(max_length=50, blank=True)
     
